@@ -1,0 +1,300 @@
+/* Main container */
+body {
+  background-color: #817464;
+  color: black;
+}
+
+.maindiv {
+  display: flex;
+  background-color: #817464;
+  justify-content: center; /* Center ProgressBar/AddLevelBtn horizontally */
+  align-items: center; /* Center ProgressBar/AddLevelBtn vertically */
+  height: 100vh; /* Full viewport height */
+  padding-left: 260px; /* Prevent content from overlapping the fixed sidebar */
+}
+
+/* Left Sidebar - Fixed Position */
+.sidebar {
+  position: fixed;
+  background-color: darkgray;
+  top: 0;
+  left: 0;
+  width: 150px; /* Adjust width as needed */
+  height: 100vh; /* Full height */
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Add Level / Show Progress Button */
+.sidebar button {
+  background-color: #1b304699;
+  margin-bottom: 12px;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  width: 100%;
+  transition: all 0.3s linear;
+}
+
+.sidebar button:hover {
+  background: #6482ad;
+}
+
+/* LevelList Styling */
+.level-list {
+  flex-grow: 1;
+  overflow-y: auto; /* Scroll if too many items */
+  max-height: calc(100vh - 60px); /* Adjusted for button space */
+}
+
+/* Centered Content (ProgressBar / AddLevelBtn) */
+.center-content {
+  width: 50%;
+  max-width: 500px;
+  background: lightgray;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.form-div {
+  max-width: 400px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 14px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+  display: flex;
+  margin-left: 370px;
+}
+
+.form-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: border-color 0.3s ease-in-out;
+}
+
+input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+button {
+  background-color: #cba50f89;
+  color: white;
+  margin-top: 15px;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s linear;
+}
+
+button:hover {
+  background-color: #cba60f;
+}
+
+.progress-container {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  margin-left: 37px;
+  left: 15%;
+  position: relative;
+  width: 200px; /* Adjust width as needed */
+  height: 200px; /* Adjust height as needed */
+  border: 2px solid #cba60f;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #f0e2a3;
+  box-shadow: 0 0 15px rgba(203, 166, 15, 0.3);
+  animation: glow 2s infinite alternate ease-in-out;
+}
+
+/* Animated Golden Gradient Fill */
+.progress-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(45deg, #cba60f, #e1c75b, #a88b07);
+  background-size: 300% 300%;
+  transition: height 0.3s linear, background 3s ease-in-out;
+  animation: dynamicGradient 5s infinite alternate;
+}
+
+/* Ripple Effect */
+.progress-container::before {
+  content: "";
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  background: rgba(203, 166, 15, 0.2);
+  border-radius: 50%;
+  z-index: -1;
+  animation: ripple 0.5s infinite linear;
+}
+
+.progress-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: rgb(85, 64, 5);
+}
+
+/* Glow Effect */
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px rgba(203, 166, 15, 0.5);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(203, 166, 15, 0.9);
+  }
+}
+
+/* Dynamic Gradient Animation */
+@keyframes dynamicGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Ripple Effect Animation */
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.progress-detail {
+  position: absolute;
+  top: 0;
+  left: 55%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px; /* Adjust width as needed */
+  background-color: darkgray;
+  padding: 15px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(255, 245, 245, 0.104);
+  text-align: center;
+  z-index: 1000; /* Ensure it stays on top */
+  margin-top: 50px;
+}
+
+.progress-detail h3 {
+  margin-top: 0%;
+  margin-bottom: 40px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.progress-detail div {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.progress-detail p {
+  margin: 5px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.timer-div {
+  position: absolute;
+  top: 200px; /* Adjust this based on the height of .progress-detail */
+  left: 55%;
+  transform: translateX(-50%);
+  background-color: rgba(245, 245, 245, 0.481);
+  padding: 15px 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 8px rgba(255, 245, 245, 0.104);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.timer-div h2 {
+  margin-bottom: 10px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.timer-div label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.timer-div input {
+  width: 25%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.button-container {
+  position: absolute;
+  top: 370px; /* Adjust this based on the height of .timer-div */
+  left: 55%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.button-container button {
+  width: 100%;
+  padding: 10px 15px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  background-color: #cba50f89;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s linear;
+}
+
+.button-container button:hover {
+  background-color: #cba60f;
+}

@@ -12,7 +12,6 @@ function App() {
   return (
     <AppContextProvider>
       <div className="maindiv">
-  {/* Fixed Sidebar */}
   <div className="sidebar">
     <button onClick={() => setShowForm(prev => !prev)}>
       {showForm ? "Show Progress" : "Add Level"}
@@ -26,8 +25,6 @@ function App() {
       />
     </div>
   </div>
-
-  {/* Centered Content */}
     {showForm && <AddLevelBtn />}
 
     {!showForm && <ProgressBar index={indexClicked} />}

@@ -298,3 +298,16 @@ button:hover {
 .button-container button:hover {
   background-color: #cba60f;
 }
+.loginBtn {
+  position: fixed;
+  bottom: 9%;
+  left: 1px;
+  display: flex;
+  padding: 10px;
+  min-width: 150px;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 16px;
+  border-radius: 8px;
+}

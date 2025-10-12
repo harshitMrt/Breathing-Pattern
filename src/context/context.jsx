@@ -57,6 +57,10 @@ export const AppContextProvider = ({ children }) => {
     ]);
   };
 
+  const deleteLevel = (id) => {
+    setLevels((prev) => prev.filter((level) => level.id !== id));
+  };
+
   const phaseInstructions = [
     "Breathe in slowly",
     "Hold your breath",
@@ -65,7 +69,9 @@ export const AppContextProvider = ({ children }) => {
   ];
 
   return (
-    <AppContext.Provider value={{ levels, addLevel, phaseInstructions }}>
+    <AppContext.Provider
+      value={{ levels, addLevel, deleteLevel, phaseInstructions }}
+    >
       {children}
     </AppContext.Provider>
   );

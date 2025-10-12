@@ -6,46 +6,66 @@ export const AppContextProvider = ({ children }) => {
   const [levels, setLevels] = useState([
     {
       id: Date.now(),
-      title: "Level 1",
-      description: "This is the first level",
-      inn: 2,
-      hold: 5,
-      out: 2,
+      title: "Box Breathing (4-4-4-4)",
+      description: "Used by Navy SEALs to reduce stress and improve focus",
+      inn: 4,
+      hold: 4,
+      out: 4,
+      hold2: 4,
     },
     {
       id: Date.now() + 1,
-      title: "Level 2",
-      description: "This is the second level",
-      inn: 3,
-      hold: 10,
-      out: 3,
+      title: "4-7-8 Breathing",
+      description: "Promotes relaxation and helps you fall asleep faster",
+      inn: 4,
+      hold: 7,
+      out: 8,
+      hold2: 0,
     },
     {
       id: Date.now() + 2,
-      title: "Level 3",
-      description: "This is the third level",
-      inn: 4,
-      hold: 15,
-      out: 4,
+      title: "5-5 Coherent Breathing",
+      description: "Balances your heart rate and calms the nervous system",
+      inn: 5,
+      hold: 0,
+      out: 5,
+      hold2: 0,
+    },
+    {
+      id: Date.now() + 3,
+      title: "Resonance Breathing (6-6)",
+      description: "Optimizes relaxation and emotional stability",
+      inn: 6,
+      hold: 0,
+      out: 6,
+      hold2: 0,
     },
   ]);
 
-  const addLevel = (title, inn, hold, out) => {
+  const addLevel = (title, inn, hold, out, hold2 = 0, description = "") => {
     setLevels((prev) => [
       ...prev,
       {
         id: Date.now(),
         title,
-        description: `This is ${title}`,
+        description: description || `This is ${title}`,
         inn,
         hold,
         out,
+        hold2,
       },
     ]);
   };
 
+  const phaseInstructions = [
+    "Breathe in slowly",
+    "Hold your breath",
+    "Exhale slowly",
+    "Hold again",
+  ];
+
   return (
-    <AppContext.Provider value={{ levels, addLevel }}>
+    <AppContext.Provider value={{ levels, addLevel, phaseInstructions }}>
       {children}
     </AppContext.Provider>
   );

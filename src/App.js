@@ -1,35 +1,108 @@
-import './App.css';
-import React, { useState } from 'react';
-import { AppContextProvider } from './context/context';
-import AddLevelBtn from './components/button';
-import ProgressBar from './components/ProgressBar';
-import LevelList from './components/LevelList';
+import React, { useState } from "react";
+import { AppContextProvider, useAppContext } from "./context/context";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import BreathingCircle from "./components/BreathingCircle";
+import ControlButtons from "./components/ControlButtons";
+import HelpButton from "./components/HelpButton";
+import BreathingModal from "./components/BreathingModal";
+import LevelList from "./components/LevelList";
+import LandingPage from "./components/LandingPage";
 
 function App() {
-  const [showForm, setShowForm] = useState(false);
-  const [indexClicked, setIndexClicked] = useState(0);
-
   return (
     <AppContextProvider>
-      <div className="maindiv">
-  <div className="sidebar">
-    <button onClick={() => setShowForm(prev => !prev)}>
-      {showForm ? "Show Progress" : "Add Level"}
-    </button>
-    <div className="level-list">
-      <LevelList 
-        showForm={showForm} 
-        setShowForm={setShowForm} 
-        indexClicked={indexClicked} 
-        setIndexClicked={setIndexClicked} 
-      />
-    </div>
-  </div>
-    {showForm && <AddLevelBtn />}
+      <AppInner />
+    </AppContextProvider>
+  );
+}
 
-    {!showForm && <ProgressBar index={indexClicked} />}
-  </div>
-</AppContextProvider>
+function AppInner() {
+  const { levels } = useAppContext();
+  const [screen, setScreen] = useState("landing");
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [showLevels, setShowLevels] = useState(false);
+
+  const handleToggle = () => {
+    setIsRunning(!isRunning);
+  };
+
+  const handleNewLevel = () => {
+    setShowModal(true);
+  };
+
+  const handleLevelsClick = () => {
+    setShowLevels(!showLevels);
+  };
+
+  const handleLevelSelect = (index) => {
+    setCurrentIndex(index);
+    setShowLevels(false);
+  };
+
+  const currentLevel = levels[currentIndex];
+
+  if (screen === "landing") {
+    return <LandingPage onStart={() => setScreen("breathing")} />;
+  }
+
+  return (
+    <div className="h-screen bg-gradient-to-br from-blue-400 to-teal-500 relative flex flex-col overflow-hidden">
+      <Header onHomeClick={() => setScreen("landing")} />
+      <button
+        onClick={() => setScreen("landing")}
+        className="absolute top-20 left-4 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
+      >
+        Back
+      </button>
+      <button
+        onClick={handleLevelsClick}
+        className="absolute top-20 right-4 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
+      >
+        Levels
+      </button>
+      <div className="p-4 text-white text-center pt-24">
+        <h1 className="text-2xl font-bold">{currentLevel.title}</h1>
+        <p className="text-sm opacity-80">{currentLevel.description}</p>
+      </div>
+      {showLevels && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-2xl font-bold mb-4 text-center">Select Level</h2>
+            <LevelList onSelect={(index) => { handleLevelSelect(index); setShowLevels(false); }} />
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={() => setShowLevels(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="flex-1 flex items-center justify-center">
+        <BreathingCircle
+          index={currentIndex}
+          isRunning={isRunning}
+          onToggle={handleToggle}
+        />
+      </div>
+      <ControlButtons
+        isRunning={isRunning}
+        onToggle={handleToggle}
+        onNewLevel={handleNewLevel}
+      />
+      <div className="text-center mt-8 text-white opacity-80 px-4">
+        Follow the breathing pattern for best results. Create custom levels to
+        match your needs.
+      </div>
+      <HelpButton />
+      <Footer />
+      <BreathingModal isOpen={showModal} onClose={() => setShowModal(false)} />
+    </div>
   );
 }
 

@@ -1,0 +1,123 @@
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
+import { useAppContext } from "../context/context";
+import exhale from "../audio.mp3/Exhale.mp3";
+import Inhale from "../audio.mp3/start Breathing.mp3";
+import HoldBreath from "../audio.mp3/Hold Breath.mp3";
+
+const StartBreathing = new Audio(Inhale);
+const Exhale = new Audio(exhale);
+const holdBreath = new Audio(HoldBreath);
+
+const BreathingCircle = ({ index, isRunning, onToggle }) => {
+  const [progress, setProgress] = useState(0);
+  const [instruction, setInstruction] = useState("Welcome! Press Start Button");
+  const cycle = 1;
+
+  const { levels } = useAppContext();
+
+  const selectedLEVEL = levels[index];
+
+  const breathIn = selectedLEVEL.inn;
+  const breathHold = selectedLEVEL.hold;
+  const breathOut = selectedLEVEL.out;
+
+  const interval = useRef(null);
+  const intervalSecond = useRef(null);
+  const intervalThird = useRef(null);
+  const timeout = useRef(null);
+  const timeoutSecond = useRef(null);
+  const progressValueRef = useRef(0);
+
+  const hold2 = selectedLEVEL.hold2 || 0;
+
+  let timer = breathIn + breathHold + breathOut + hold2;
+
+  const runProgress = useCallback(() => {
+    const inTime = 100 / (breathIn * 10);
+    const holdTime = breathHold * 1000;
+    const outTime = 100 / (breathOut * 10);
+
+    StartBreathing.play();
+    setInstruction("Inhale/Exhale");
+
+    interval.current = setInterval(() => {
+      if (progressValueRef.current >= 100) {
+        if (breathHold > 0) {
+          holdBreath.play();
+        }
+        setInstruction("Hold Breath");
+        clearInterval(interval.current);
+
+        timeout.current = setTimeout(() => {
+          Exhale.play();
+          setInstruction("Inhale/Exhale");
+          intervalSecond.current = setInterval(() => {
+            if (progressValueRef.current <= 0) {
+              clearInterval(intervalSecond.current);
+              if (hold2 > 0) {
+                setInstruction("Hold again");
+                holdBreath.play();
+                timeoutSecond.current = setTimeout(() => {
+                  // end of cycle
+                }, hold2 * 1000);
+              } else {
+                // end of cycle
+              }
+            } else {
+              progressValueRef.current -= outTime;
+              setProgress(Math.max(0, Math.round(progressValueRef.current)));
+            }
+          }, 100);
+        }, holdTime);
+      } else {
+        progressValueRef.current += inTime;
+        setProgress(Math.min(100, Math.round(progressValueRef.current)));
+      }
+    }, 100);
+  }, [breathIn, breathHold, breathOut]);
+
+  useEffect(() => {
+    if (isRunning) {
+      runProgress();
+
+      intervalThird.current = setInterval(() => {
+        runProgress();
+      }, timer * 1000 + cycle * 1000);
+    } else {
+      clearInterval(intervalThird.current);
+      clearInterval(interval.current);
+      clearTimeout(timeout.current);
+      clearInterval(intervalSecond.current);
+
+      progressValueRef.current = 0;
+      setProgress(0);
+      setInstruction("Welcome! Press Start Button");
+    }
+    return () => {
+      clearInterval(intervalThird.current);
+      clearInterval(interval.current);
+      clearTimeout(timeout.current);
+      clearInterval(intervalSecond.current);
+    };
+  }, [isRunning, timer, runProgress]);
+
+  if (!selectedLEVEL) return <p>Select Level</p>;
+
+  const scale = progress === 100 ? 1.2 : (progress / 100) * 0.2 + 1;
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4">
+      <motion.div
+        className="w-64 h-64 bg-white bg-opacity-20 rounded-full flex items-center justify-center shadow-lg"
+        animate={{ scale }}
+        transition={{ duration: 0.1, ease: "easeInOut" }}
+      >
+        <div className="text-6xl font-bold text-white">{progress}</div>
+      </motion.div>
+      <p className="mt-8 text-xl text-white text-center">{instruction}</p>
+    </div>
+  );
+};
+
+export default BreathingCircle;

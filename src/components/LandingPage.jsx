@@ -24,6 +24,14 @@ const LandingPage = ({ onStart }) => {
             reduce stress, improve focus, and enhance overall well-being.
           </p>
         </div>
+        <div className="text-center mb-12">
+          <button
+            onClick={onStart}
+            className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:from-blue-600 hover:to-teal-600 transition duration-300 shadow-lg"
+          >
+            Start Your Breathing Journey
+          </button>
+        </div>
         <section className="mb-16">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-8 md:mb-0">
@@ -207,14 +215,6 @@ const LandingPage = ({ onStart }) => {
             </div>
           </div>
         </section>
-        <div className="text-center">
-          <button
-            onClick={onStart}
-            className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:from-blue-600 hover:to-teal-600 transition duration-300 shadow-lg"
-          >
-            Start Your Breathing Journey
-          </button>
-        </div>
       </div>
       <Footer />
     </div>

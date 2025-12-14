@@ -48,6 +48,31 @@ function AppInner() {
     return <LandingPage onStart={() => setScreen("breathing")} />;
   }
 
+  if (!levels.length) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-blue-400 to-teal-500 relative flex flex-col overflow-hidden">
+        <Header onHomeClick={() => setScreen("landing")} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-white">
+            <h1 className="text-2xl font-bold">No Levels Available</h1>
+            <p>Please create a level to start breathing.</p>
+            <button
+              onClick={handleNewLevel}
+              className="mt-4 bg-white text-blue-600 px-4 py-2 rounded"
+            >
+              Create Level
+            </button>
+          </div>
+        </div>
+        <Footer />
+        <BreathingModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-gradient-to-br from-blue-400 to-teal-500 relative flex flex-col overflow-hidden">
       <Header onHomeClick={() => setScreen("landing")} />
@@ -70,8 +95,15 @@ function AppInner() {
       {showLevels && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h2 className="text-2xl font-bold mb-4 text-center">Select Level</h2>
-            <LevelList onSelect={(index) => { handleLevelSelect(index); setShowLevels(false); }} />
+            <h2 className="text-2xl font-bold mb-4 text-center">
+              Select Level
+            </h2>
+            <LevelList
+              onSelect={(index) => {
+                handleLevelSelect(index);
+                setShowLevels(false);
+              }}
+            />
             <div className="flex justify-center mt-4">
               <button
                 onClick={() => setShowLevels(false)}

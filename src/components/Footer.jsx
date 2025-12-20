@@ -40,7 +40,7 @@ const Footer = () => {
               <FaFacebook size={24} />
             </a>
             <a
-              href="https://wa.me/yournumber"
+              href="https://wa.me/7668622899"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-green-400 transition duration-300"
@@ -48,7 +48,7 @@ const Footer = () => {
               <FaWhatsapp size={24} />
             </a>
             <a
-              href="https://twitter.com/youraccount"
+              href="https://twitter.com/hritikgulia"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-300 transition duration-300"

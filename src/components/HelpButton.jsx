@@ -13,15 +13,49 @@ const HelpButton = () => {
         ?
       </button>
       {showTooltip && (
-        <motion.div
-          className="absolute bottom-16 right-0 bg-white text-black p-4 rounded-lg shadow-lg max-w-xs"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.2 }}
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setShowTooltip(false)}
         >
-          <p className="text-sm">Follow the breathing pattern for best results. Create custom levels to match your needs.</p>
-        </motion.div>
+          <motion.div
+            className="bg-white rounded-lg p-8 max-w-md mx-4 shadow-2xl"
+            initial={{ opacity: 0, scale: 1.6, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 1.6, y: 50 }}
+            transition={{ duration: 0.6 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">
+                How to Use the Breathing App
+              </h3>
+              <div className="text-gray-600 space-y-3">
+                <p>
+                  <strong>Follow the breathing pattern:</strong> Inhale, Hold,
+                  Exhale, Hold
+                </p>
+                <p>
+                  <strong>Create custom levels:</strong> Click "Create Level" to
+                  add your own breathing patterns
+                </p>
+                <p>
+                  <strong>Select different patterns:</strong> Use the "Levels"
+                  button to choose from available patterns
+                </p>
+                <p>
+                  <strong>Best results:</strong> Practice consistently in a
+                  quiet environment
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTooltip(false)}
+                className="mt-6 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition"
+              >
+                Got it!
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );

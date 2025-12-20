@@ -84,19 +84,19 @@ function AppInner() {
       <Header onHomeClick={() => setScreen("landing")} />
       <button
         onClick={() => setScreen("landing")}
-        className="absolute top-20 left-4 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
+        className="absolute top-20 right-4 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
       >
         Back
       </button>
       <button
         onClick={handleLevelsClick}
-        className="absolute top-20 right-4 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
+        className="absolute top-20 left-4 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
       >
         Levels
       </button>
       <button
         onClick={handleUserFormClick}
-        className="absolute top-20 right-24 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
+        className="absolute top-20 left-24 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
       >
         Ask AI
       </button>

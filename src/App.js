@@ -8,6 +8,7 @@ import HelpButton from "./components/HelpButton";
 import BreathingModal from "./components/BreathingModal";
 import LevelList from "./components/LevelList";
 import LandingPage from "./components/LandingPage";
+import UserForm from "./components/UserForm.jsx";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function AppInner() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [showLevels, setShowLevels] = useState(false);
+  const [showUserForm, setShowUserForm] = useState(false);
 
   const handleToggle = () => {
     setIsRunning(!isRunning);
@@ -35,6 +37,10 @@ function AppInner() {
 
   const handleLevelsClick = () => {
     setShowLevels(!showLevels);
+  };
+
+  const handleUserFormClick = () => {
+    setShowUserForm(!showUserForm);
   };
 
   const handleLevelSelect = (index) => {
@@ -88,6 +94,12 @@ function AppInner() {
       >
         Levels
       </button>
+      <button
+        onClick={handleUserFormClick}
+        className="absolute top-20 right-24 bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg hover:bg-opacity-30 transition z-10"
+      >
+        Ask AI
+      </button>
       <div className="p-4 text-white text-center pt-24">
         <h1 className="text-2xl font-bold">{currentLevel.title}</h1>
         <p className="text-sm opacity-80">{currentLevel.description}</p>
@@ -115,6 +127,24 @@ function AppInner() {
           </div>
         </div>
       )}
+
+      {showUserForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-2xl font-bold mb-4 text-center">UserForm</h2>
+            <UserForm />
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={() => setShowUserForm(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex items-center justify-center">
         <BreathingCircle
           index={currentIndex}
@@ -131,6 +161,7 @@ function AppInner() {
         Follow the breathing pattern for best results. Create custom levels to
         match your needs.
       </div>
+
       <HelpButton />
       <Footer />
       <BreathingModal isOpen={showModal} onClose={() => setShowModal(false)} />

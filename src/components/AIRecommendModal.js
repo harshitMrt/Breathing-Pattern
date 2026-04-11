@@ -1,18 +1,100 @@
 // src/components/AIRecommendModal.js
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  getAIRecommendation,
-  NEED_OPTIONS,
-  EXPERIENCE_LEVELS,
-  SESSION_DURATIONS,
-} from "../services/aiRecommendation";
-import { saveCustomLevel } from "../services/firestoreService";
-import { useAuth } from "../context/AuthContext";
+import { useAppContext } from "../context/context";
 
-export default function AIRecommendModal({ onClose, onLevelCreated }) {
-  const { user } = useAuth();
-  const [step, setStep] = useState(0); // 0 = form, 1 = loading, 2 = result
+const NEED_OPTIONS = [
+  { id: "stress", emoji: "😰", label: "Reduce stress" },
+  { id: "sleep", emoji: "😴", label: "Better sleep" },
+  { id: "focus", emoji: "🎯", label: "Improve focus" },
+  { id: "energy", emoji: "⚡", label: "Boost energy" },
+  { id: "anxiety", emoji: "💭", label: "Calm anxiety" },
+  { id: "balance", emoji: "⚖️", label: "Emotional balance" },
+];
+
+const EXPERIENCE_LEVELS = [
+  { id: "beginner", label: "Beginner" },
+  { id: "intermediate", label: "Intermediate" },
+  { id: "advanced", label: "Advanced" },
+];
+
+const SESSION_DURATIONS = [
+  { id: "short", label: "Short (2–5 min)" },
+  { id: "medium", label: "Medium (5–10 min)" },
+  { id: "long", label: "Long (10–20 min)" },
+];
+
+async function getAIRecommendation({
+  needs,
+  experience,
+  duration,
+  additionalContext,
+}) {
+  const prompt = `You are a breathwork expert. Design a personalised breathing exercise level.
+
+User needs: ${needs.join(", ")}
+Experience level: ${experience}
+Preferred session duration: ${duration}
+Additional context: ${additionalContext || "None"}
+
+Respond with ONLY a valid JSON object, no markdown, no explanation, exactly this shape:
+{
+  "name": "Short descriptive name (max 5 words)",
+  "technique": "Technique name (e.g. Box Breathing, 4-7-8, Coherent Breathing)",
+  "inn": <inhale seconds, integer 2-8>,
+  "hold": <hold after inhale seconds, integer 0-8>,
+  "out": <exhale seconds, integer 2-10>,
+  "hold2": <hold after exhale seconds, integer 0-4>,
+  "note": "One sentence explaining why this pattern suits the user's needs"
+}`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`API error: ${response.status} — ${err}`);
+  }
+
+  const data = await response.json();
+  const text = data.content
+    .filter((b) => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+
+  // Strip any accidental markdown fences
+  const clean = text.replace(/```json|```/g, "").trim();
+  const parsed = JSON.parse(clean);
+
+  // Validate required fields
+  const required = ["name", "technique", "inn", "out"];
+  for (const key of required) {
+    if (parsed[key] === undefined) throw new Error(`Missing field: ${key}`);
+  }
+
+  // Defaults for optional fields
+  parsed.hold = parsed.hold ?? 0;
+  parsed.hold2 = parsed.hold2 ?? 0;
+  parsed.note = parsed.note ?? "";
+
+  return parsed;
+}
+
+export default function AIRecommendModal({
+  onClose,
+  onLevelCreated,
+  onPlayLevel,
+}) {
+  const { addLevel } = useAppContext();
+
+  const [step, setStep] = useState(0); // 0=form 1=loading 2=result
   const [needs, setNeeds] = useState([]);
   const [experience, setExperience] = useState("beginner");
   const [duration, setDuration] = useState("medium");
@@ -43,20 +125,52 @@ export default function AIRecommendModal({ onClose, onLevelCreated }) {
       setResult(level);
       setStep(2);
     } catch (e) {
-      setError(e.message);
+      setError("Could not generate a recommendation. Please try again.");
       setStep(0);
     }
   };
 
+  // Save to Firestore + context, then close
   const handleSave = async () => {
     if (!result) return;
     setSaving(true);
     try {
-      await saveCustomLevel(user.uid, result);
+      await addLevel(
+        result.name,
+        result.inn,
+        result.hold,
+        result.out,
+        result.hold2,
+        result.note,
+        result.technique,
+      );
       onLevelCreated?.(result);
       onClose();
     } catch (e) {
-      setError(e.message);
+      setError("Failed to save. Please try again.");
+    }
+    setSaving(false);
+  };
+
+  // Save + navigate to breathe page
+  const handlePlayLevel = async () => {
+    if (!result) return;
+    setSaving(true);
+    try {
+      await addLevel(
+        result.name,
+        result.inn,
+        result.hold,
+        result.out,
+        result.hold2,
+        result.note,
+        result.technique,
+      );
+      onLevelCreated?.(result);
+      onPlayLevel?.();
+      onClose();
+    } catch (e) {
+      setError("Failed to save. Please try again.");
     }
     setSaving(false);
   };
@@ -99,7 +213,6 @@ export default function AIRecommendModal({ onClose, onLevelCreated }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Goals */}
               <p style={styles.sectionLabel}>What are your goals?</p>
               <div style={styles.needsGrid}>
                 {NEED_OPTIONS.map((n) => (
@@ -125,7 +238,6 @@ export default function AIRecommendModal({ onClose, onLevelCreated }) {
                 ))}
               </div>
 
-              {/* Experience */}
               <p style={styles.sectionLabel}>Your experience level</p>
               <div style={styles.pillRow}>
                 {EXPERIENCE_LEVELS.map((e) => (
@@ -148,7 +260,6 @@ export default function AIRecommendModal({ onClose, onLevelCreated }) {
                 ))}
               </div>
 
-              {/* Duration */}
               <p style={styles.sectionLabel}>Preferred session duration</p>
               <div style={styles.pillRow}>
                 {SESSION_DURATIONS.map((d) => (
@@ -171,11 +282,10 @@ export default function AIRecommendModal({ onClose, onLevelCreated }) {
                 ))}
               </div>
 
-              {/* Extra context */}
               <p style={styles.sectionLabel}>Anything else? (optional)</p>
               <textarea
                 style={styles.textarea}
-                placeholder="e.g. I have a big presentation tomorrow, I struggle with falling asleep, I feel overwhelmed at work…"
+                placeholder="e.g. I have a big presentation tomorrow, I struggle with falling asleep…"
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
                 rows={3}
@@ -227,7 +337,7 @@ export default function AIRecommendModal({ onClose, onLevelCreated }) {
                   <p style={styles.resultNote}>"{result.note}"</p>
                 )}
 
-                {/* Visual pattern */}
+                {/* Pattern visualiser */}
                 <div style={styles.patternRow}>
                   {[
                     { label: "Inhale", val: result.inn, color: "var(--blue)" },
@@ -284,29 +394,44 @@ export default function AIRecommendModal({ onClose, onLevelCreated }) {
 
               {error && <p style={styles.errorText}>{error}</p>}
 
-              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              {/* Action buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  marginTop: 16,
+                }}
+              >
+                {/* Primary: Play Level */}
                 <button
-                  style={{
-                    ...styles.generateBtn,
-                    background: "var(--surface2)",
-                    color: "var(--text1)",
-                    border: "1px solid var(--border)",
-                    flex: 1,
-                  }}
-                  onClick={() => {
-                    setStep(0);
-                    setResult(null);
-                  }}
-                >
-                  ← Try Again
-                </button>
-                <button
-                  style={{ ...styles.generateBtn, flex: 2 }}
-                  onClick={handleSave}
+                  style={styles.playBtn}
+                  onClick={handlePlayLevel}
                   disabled={saving}
                 >
-                  {saving ? "Saving…" : "💾 Save & Use This Level"}
+                  {saving ? "Saving…" : "▶ Play This Level"}
                 </button>
+
+                {/* Secondary row */}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    style={{ ...styles.ghostBtn, flex: 1 }}
+                    onClick={() => {
+                      setStep(0);
+                      setResult(null);
+                      setError("");
+                    }}
+                  >
+                    ← Try Again
+                  </button>
+                  <button
+                    style={{ ...styles.ghostBtn, flex: 1 }}
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving…" : "💾 Save Only"}
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
@@ -417,7 +542,6 @@ const styles = {
     fontWeight: 800,
     cursor: "pointer",
     letterSpacing: "0.02em",
-    transition: "opacity 0.2s",
     boxSizing: "border-box",
   },
   errorText: { fontSize: 12, color: "#f87171", margin: "8px 0 0" },
@@ -473,5 +597,33 @@ const styles = {
     display: "flex",
     gap: 6,
     alignItems: "flex-end",
+  },
+  playBtn: {
+    width: "100%",
+    padding: "14px",
+    background: "var(--teal)",
+    border: "none",
+    borderRadius: 10,
+    color: "#000",
+    fontSize: 15,
+    fontWeight: 800,
+    cursor: "pointer",
+    letterSpacing: "0.01em",
+    boxSizing: "border-box",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  ghostBtn: {
+    padding: "12px",
+    background: "var(--surface2)",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+    color: "var(--text2)",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    boxSizing: "border-box",
   },
 };

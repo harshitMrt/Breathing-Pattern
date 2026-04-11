@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { motion, useInView, useAnimation } from "framer-motion";
+import React from "react";
+import { motion } from "framer-motion";
 import Header from "./Header";
 import Footer from "./Footer";
 
@@ -333,14 +333,6 @@ const AdBanner = ({
 
 /* ══ LandingPage ══ */
 const LandingPage = ({ onStart }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const ctrl = useAnimation();
-
-  useEffect(() => {
-    if (inView) ctrl.start("visible");
-  }, [inView, ctrl]);
-
   return (
     <div
       style={{
@@ -352,7 +344,7 @@ const LandingPage = ({ onStart }) => {
     >
       <Header onHomeClick={onStart} />
 
-      <main style={{ flex: 1 }} ref={ref}>
+      <main style={{ flex: 1 }}>
         {/* ── HERO ── */}
         <section
           style={{
@@ -388,7 +380,7 @@ const LandingPage = ({ onStart }) => {
             {/* left */}
             <motion.div
               initial="hidden"
-              animate={ctrl}
+              animate="visible"
               variants={{
                 hidden: { opacity: 0 },
                 visible: { opacity: 1, transition: { staggerChildren: 0.12 } },
@@ -578,15 +570,8 @@ const LandingPage = ({ onStart }) => {
             {/* right — decorative visual */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
-              animate={ctrl.controls ? undefined : { opacity: 1, x: 0 }}
-              variants={{
-                hidden: { opacity: 0, x: 30 },
-                visible: {
-                  opacity: 1,
-                  x: 0,
-                  transition: { duration: 0.8, ease: "easeOut" },
-                },
-              }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <div
                 style={{

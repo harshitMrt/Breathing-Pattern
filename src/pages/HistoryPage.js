@@ -9,9 +9,7 @@ import {
   deleteCustomLevel,
 } from "../services/firestoreService";
 
-const tabs = ["Sessions", "My Levels"];
-
-const formatDate = (ts) => {
+const fmt = (ts) => {
   if (!ts) return "—";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   return d.toLocaleDateString("en-US", {
@@ -23,15 +21,20 @@ const formatDate = (ts) => {
   });
 };
 
-const StatPill = ({ label, value, color = "var(--teal)" }) => (
+const Stat = ({ label, value, color }) => (
   <div style={{ textAlign: "center" }}>
-    <div style={{ fontSize: 16, fontWeight: 800, color }}>{value}</div>
+    <div
+      style={{ fontSize: 22, fontWeight: 800, color, letterSpacing: "-0.5px" }}
+    >
+      {value}
+    </div>
     <div
       style={{
         fontSize: 10,
         color: "var(--text3)",
-        letterSpacing: "0.04em",
-        marginTop: 2,
+        marginTop: 4,
+        letterSpacing: "0.05em",
+        textTransform: "uppercase",
       }}
     >
       {label}
@@ -49,295 +52,322 @@ export default function HistoryPage({ onUseLevel }) {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [s, l] = await Promise.all([
-        getUserSessions(user.uid),
-        getUserCustomLevels(user.uid),
-      ]);
-      setSessions(s);
-      setLevels(l);
+      try {
+        const [s, l] = await Promise.all([
+          getUserSessions(user.uid),
+          getUserCustomLevels(user.uid),
+        ]);
+        setSessions(s);
+        setLevels(l);
+      } catch (e) {
+        console.error(e);
+      }
       setLoading(false);
     };
+    load(); // ← was missing before
   }, [user.uid]);
 
-  const handleDeleteSession = async (id) => {
-    await deleteSession(id);
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  const handleDeleteLevel = async (id) => {
-    await deleteCustomLevel(id);
-    setLevels((prev) => prev.filter((l) => l.id !== id));
-  };
-
-  // Summary stats
   const totalMins = sessions.reduce((a, s) => a + (s.durationMinutes ?? 0), 0);
   const totalCycles = sessions.reduce((a, s) => a + (s.cycles ?? 0), 0);
 
   return (
-    <div style={styles.page}>
-      {/* Header stats */}
-      <div style={styles.statsRow}>
-        <StatPill
-          label="SESSIONS"
-          value={sessions.length}
-          color="var(--blue)"
-        />
-        <div style={styles.statsDivider} />
-        <StatPill
-          label="TOTAL MINS"
-          value={Math.round(totalMins)}
-          color="var(--teal)"
-        />
-        <div style={styles.statsDivider} />
-        <StatPill label="CYCLES" value={totalCycles} color="var(--purple)" />
-        <div style={styles.statsDivider} />
-        <StatPill
-          label="MY LEVELS"
-          value={levels.length}
-          color="var(--amber)"
-        />
-      </div>
+    <div style={S.page}>
+      <div style={S.inner}>
+        {/* Header */}
+        <div style={{ marginBottom: 8 }}>
+          <p style={S.eyebrow}>Your progress</p>
+          <h1 style={S.heading}>Breathing history</h1>
+        </div>
 
-      {/* Tabs */}
-      <div style={styles.tabRow}>
-        {tabs.map((t, i) => (
-          <button
-            key={t}
-            onClick={() => setTab(i)}
+        {/* Stats */}
+        <div style={S.statsCard}>
+          <Stat label="Sessions" value={sessions.length} color="var(--blue)" />
+          <div style={S.div} />
+          <Stat
+            label="Total mins"
+            value={Math.round(totalMins)}
+            color="var(--teal)"
+          />
+          <div style={S.div} />
+          <Stat label="Cycles" value={totalCycles} color="var(--purple)" />
+          <div style={S.div} />
+          <Stat label="My levels" value={levels.length} color="var(--amber)" />
+        </div>
+
+        {/* Tabs */}
+        <div style={S.tabRow}>
+          {["Sessions", "My Levels"].map((t, i) => (
+            <button
+              key={t}
+              onClick={() => setTab(i)}
+              style={{
+                ...S.tab,
+                color: tab === i ? "var(--text)" : "var(--text3)",
+                borderBottom:
+                  tab === i ? "2px solid var(--teal)" : "2px solid transparent",
+              }}
+            >
+              {t}
+              <span
+                style={{
+                  marginLeft: 6,
+                  fontSize: 11,
+                  padding: "1px 7px",
+                  borderRadius: 10,
+                  background:
+                    tab === i ? "rgba(29,229,200,0.12)" : "var(--surface)",
+                  color: tab === i ? "var(--teal)" : "var(--text3)",
+                }}
+              >
+                {i === 0 ? sessions.length : levels.length}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        {loading ? (
+          <div
             style={{
-              ...styles.tab,
-              color: tab === i ? "var(--text1)" : "var(--text3)",
-              borderBottom:
-                tab === i ? "2px solid var(--teal)" : "2px solid transparent",
+              textAlign: "center",
+              padding: "60px 0",
+              color: "var(--text3)",
             }}
           >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <p
-          style={{ color: "var(--text3)", textAlign: "center", marginTop: 40 }}
-        >
-          Loading…
-        </p>
-      ) : (
-        <AnimatePresence mode="wait">
-          {tab === 0 ? (
-            <motion.div
-              key="sessions"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              style={styles.list}
-            >
-              {sessions.length === 0 && (
-                <p style={styles.emptyText}>
-                  No sessions yet. Start breathing!
-                </p>
-              )}
-              {sessions.map((s) => (
-                <div key={s.id} style={styles.card}>
-                  <div style={styles.cardHeader}>
-                    <div>
-                      <p style={styles.cardTitle}>{s.levelName ?? "Session"}</p>
-                      <p style={styles.cardDate}>{formatDate(s.createdAt)}</p>
-                    </div>
-                    <button
-                      style={styles.deleteBtn}
-                      onClick={() => handleDeleteSession(s.id)}
-                      title="Delete"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div style={styles.cardStats}>
-                    <span style={styles.badge}>🌬 {s.inn}s inhale</span>
-                    {s.hold > 0 && (
-                      <span style={styles.badge}>⏸ {s.hold}s hold</span>
-                    )}
-                    <span style={styles.badge}>💨 {s.out}s exhale</span>
-                    {s.hold2 > 0 && (
-                      <span style={styles.badge}>⏸ {s.hold2}s hold</span>
-                    )}
-                    <span
-                      style={{
-                        ...styles.badge,
-                        background: "rgba(29,229,200,0.1)",
-                        color: "var(--teal)",
-                      }}
-                    >
-                      {s.durationMinutes ?? "?"} min
-                    </span>
-                    <span
-                      style={{
-                        ...styles.badge,
-                        background: "rgba(139,92,246,0.1)",
-                        color: "var(--purple)",
-                      }}
-                    >
-                      {s.cycles ?? "?"} cycles
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="levels"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              style={styles.list}
-            >
-              {levels.length === 0 && (
-                <p style={styles.emptyText}>
-                  No custom levels yet. Use AI Recommend to create one!
-                </p>
-              )}
-              {levels.map((l) => (
-                <div key={l.id} style={styles.card}>
-                  <div style={styles.cardHeader}>
-                    <div>
-                      <p style={styles.cardTitle}>{l.name}</p>
-                      {l.technique && (
-                        <p style={{ ...styles.cardDate, color: "var(--teal)" }}>
-                          {l.technique}
-                        </p>
-                      )}
-                      <p style={styles.cardDate}>{formatDate(l.createdAt)}</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {onUseLevel && (
-                        <button
+            Loading…
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {tab === 0 ? (
+              <motion.div
+                key="s"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {sessions.length === 0 ? (
+                  <div style={S.empty}>No sessions yet — go breathe! 🌬</div>
+                ) : (
+                  sessions.map((s) => (
+                    <div key={s.id} style={S.card}>
+                      <div style={S.cardLeft}>
+                        <div style={S.cardDot} />
+                        <div>
+                          <p style={S.cardTitle}>{s.levelName ?? "Session"}</p>
+                          <p style={S.cardMeta}>{fmt(s.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div style={S.badgeRow}>
+                        <span style={S.badge}>↑ {s.inn}s</span>
+                        {s.hold > 0 && <span style={S.badge}>◆ {s.hold}s</span>}
+                        <span style={S.badge}>↓ {s.out}s</span>
+                        {s.hold2 > 0 && (
+                          <span style={S.badge}>◆ {s.hold2}s</span>
+                        )}
+                        <span
                           style={{
-                            ...styles.deleteBtn,
+                            ...S.badge,
+                            background: "rgba(29,229,200,0.1)",
                             color: "var(--teal)",
-                            borderColor: "var(--teal)",
                           }}
-                          onClick={() => onUseLevel(l)}
-                          title="Use this level"
                         >
-                          ▶
-                        </button>
-                      )}
+                          {s.durationMinutes ?? "?"} min
+                        </span>
+                        <span
+                          style={{
+                            ...S.badge,
+                            background: "rgba(139,92,246,0.1)",
+                            color: "var(--purple)",
+                          }}
+                        >
+                          {s.cycles ?? "?"} cycles
+                        </span>
+                      </div>
                       <button
-                        style={styles.deleteBtn}
-                        onClick={() => handleDeleteLevel(l.id)}
-                        title="Delete"
+                        style={S.delBtn}
+                        onClick={async () => {
+                          await deleteSession(s.id);
+                          setSessions((p) => p.filter((x) => x.id !== s.id));
+                        }}
                       >
                         ✕
                       </button>
                     </div>
+                  ))
+                )}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="l"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {levels.length === 0 ? (
+                  <div style={S.empty}>
+                    No custom levels yet — use AI Recommend ✨
                   </div>
-                  {l.note && <p style={styles.noteText}>"{l.note}"</p>}
-                  <div style={styles.cardStats}>
-                    <span style={styles.badge}>🌬 {l.inn}s</span>
-                    {l.hold > 0 && (
-                      <span style={styles.badge}>⏸ {l.hold}s</span>
-                    )}
-                    <span style={styles.badge}>💨 {l.out}s</span>
-                    {l.hold2 > 0 && (
-                      <span style={styles.badge}>⏸ {l.hold2}s</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
+                ) : (
+                  levels.map((l) => (
+                    <div key={l.id} style={S.card}>
+                      <div style={S.cardLeft}>
+                        <div
+                          style={{ ...S.cardDot, background: "var(--teal)" }}
+                        />
+                        <div>
+                          <p style={S.cardTitle}>{l.name || l.title}</p>
+                          {l.technique && (
+                            <p style={{ ...S.cardMeta, color: "var(--teal)" }}>
+                              {l.technique}
+                            </p>
+                          )}
+                          <p style={S.cardMeta}>{fmt(l.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div style={S.badgeRow}>
+                        <span style={S.badge}>↑ {l.inn}s</span>
+                        {l.hold > 0 && <span style={S.badge}>◆ {l.hold}s</span>}
+                        <span style={S.badge}>↓ {l.out}s</span>
+                        {l.hold2 > 0 && (
+                          <span style={S.badge}>◆ {l.hold2}s</span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        {onUseLevel && (
+                          <button
+                            style={{
+                              ...S.delBtn,
+                              color: "var(--teal)",
+                              borderColor: "var(--teal)",
+                            }}
+                            onClick={() => onUseLevel(l)}
+                          >
+                            ▶
+                          </button>
+                        )}
+                        <button
+                          style={S.delBtn}
+                          onClick={async () => {
+                            await deleteCustomLevel(l.id);
+                            setLevels((p) => p.filter((x) => x.id !== l.id));
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+      </div>
     </div>
   );
 }
 
-const styles = {
-  page: { padding: "0 0 40px" },
-  statsRow: {
+const S = {
+  page: {
+    background: "var(--bg)",
+    minHeight: "calc(100vh - 58px)",
+    padding: "36px 0 60px",
+  },
+  inner: { maxWidth: 800, margin: "0 auto", padding: "0 28px" },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "var(--teal)",
+    margin: "0 0 5px",
+  },
+  heading: {
+    fontSize: 26,
+    fontWeight: 800,
+    letterSpacing: "-0.8px",
+    margin: "0 0 24px",
+    color: "var(--text)",
+  },
+  statsCard: {
     display: "flex",
     alignItems: "center",
-    gap: 0,
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: 14,
-    padding: "16px 0",
-    marginBottom: 24,
     justifyContent: "space-around",
+    background: "var(--bg2)",
+    border: "0.5px solid var(--border)",
+    borderRadius: 16,
+    padding: "20px 0",
+    marginBottom: 28,
   },
-  statsDivider: { width: 1, height: 32, background: "var(--border)" },
+  div: { width: 1, height: 36, background: "var(--border)" },
   tabRow: {
     display: "flex",
-    borderBottom: "1px solid var(--border)",
+    borderBottom: "0.5px solid var(--border)",
     marginBottom: 20,
+    gap: 4,
   },
   tab: {
     background: "none",
     border: "none",
     borderBottom: "2px solid transparent",
-    padding: "10px 20px",
+    padding: "10px 4px",
     fontSize: 13,
-    fontWeight: 700,
+    fontWeight: 600,
     cursor: "pointer",
-    letterSpacing: "0.04em",
-    transition: "color 0.2s, border-color 0.2s",
+    letterSpacing: "0.02em",
+    marginRight: 20,
+    transition: "color 0.2s",
   },
-  list: { display: "flex", flexDirection: "column", gap: 12 },
-  emptyText: {
+  empty: {
     textAlign: "center",
     color: "var(--text3)",
-    fontSize: 13,
-    marginTop: 40,
+    fontSize: 14,
+    padding: "60px 0",
   },
   card: {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
+    display: "flex",
+    alignItems: "center",
+    gap: 16,
+    background: "var(--bg2)",
+    border: "0.5px solid var(--border)",
     borderRadius: 14,
     padding: "16px 18px",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
     marginBottom: 10,
+    flexWrap: "wrap",
   },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "var(--text1)",
-    margin: 0,
+  cardLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    minWidth: 160,
   },
-  cardDate: {
-    fontSize: 11,
-    color: "var(--text3)",
-    margin: "3px 0 0",
+  cardDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    background: "var(--blue)",
+    flexShrink: 0,
   },
-  deleteBtn: {
-    background: "none",
-    border: "1px solid var(--border)",
-    borderRadius: 6,
-    color: "var(--text3)",
-    fontSize: 11,
-    cursor: "pointer",
-    padding: "4px 8px",
-    lineHeight: 1,
-    transition: "color 0.2s, border-color 0.2s",
-  },
-  cardStats: { display: "flex", flexWrap: "wrap", gap: 6 },
+  cardTitle: { fontSize: 14, fontWeight: 600, color: "var(--text)", margin: 0 },
+  cardMeta: { fontSize: 11, color: "var(--text3)", margin: "3px 0 0" },
+  badgeRow: { display: "flex", flexWrap: "wrap", gap: 6 },
   badge: {
     fontSize: 11,
     fontWeight: 600,
-    padding: "4px 8px",
-    background: "var(--surface2)",
+    padding: "3px 9px",
+    background: "var(--surface)",
     borderRadius: 6,
     color: "var(--text2)",
-    letterSpacing: "0.02em",
   },
-  noteText: {
-    fontSize: 12,
+  delBtn: {
+    background: "none",
+    border: "0.5px solid var(--border)",
+    borderRadius: 6,
     color: "var(--text3)",
-    fontStyle: "italic",
-    margin: "0 0 10px",
-    lineHeight: 1.5,
+    fontSize: 11,
+    cursor: "pointer",
+    padding: "5px 9px",
+    flexShrink: 0,
   },
 };

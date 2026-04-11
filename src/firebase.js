@@ -3,8 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// 🔴 Replace these with your actual Firebase project config
-// Go to: https://console.firebase.google.com → Your Project → Project Settings → General → Your Apps
+// ✅ Your real Firebase config is already here
 const firebaseConfig = {
   apiKey: "AIzaSyAM1_Z0JybaEuzIaif54R-Snmjx9Yz5pvU",
   authDomain: "breathing-pattern.firebaseapp.com",

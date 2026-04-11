@@ -163,15 +163,20 @@ const Footer = () => (
               {col}
             </p>
             {items.map((item) => (
-              <a
+              <button
                 key={item}
-                href="#"
+                onClick={() => {}}
                 style={{
                   display: "block",
                   fontSize: 13,
                   color: "var(--text2)",
                   marginBottom: 9,
                   transition: "color 0.2s",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  textAlign: "left",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.color = "var(--text)")
@@ -181,7 +186,7 @@ const Footer = () => (
                 }
               >
                 {item}
-              </a>
+              </button>
             ))}
           </div>
         ))}

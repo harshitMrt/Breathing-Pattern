@@ -183,6 +183,7 @@ const ExercisePage = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState("Welcome! Press Start");
 
   // Auto-select newly added level
   useEffect(() => {
@@ -190,7 +191,7 @@ const ExercisePage = () => {
       setIsRunning(false);
       setSelectedIndex(lastAddedIndex);
     }
-  }, [lastAddedIndex]);
+  }, [lastAddedIndex, levels.length]);
 
   const level = levels[selectedIndex];
   const breathIn = level?.inn ?? 4;
@@ -201,11 +202,15 @@ const ExercisePage = () => {
   const handleSelect = (i) => {
     setIsRunning(false);
     setSelectedIndex(i);
+    setCurrentPhase("Welcome! Press Start");
   };
   const handleDelete = async (id) => {
     const idx = levels.findIndex((l) => l.id === id);
     await deleteLevel(id);
-    if (idx === selectedIndex) setSelectedIndex(Math.max(0, selectedIndex - 1));
+    if (idx === selectedIndex) {
+      setSelectedIndex(Math.max(0, selectedIndex - 1));
+      setCurrentPhase("Welcome! Press Start");
+    }
     setIsRunning(false);
   };
 
@@ -348,6 +353,7 @@ const ExercisePage = () => {
             index={selectedIndex}
             isRunning={isRunning}
             onToggle={() => setIsRunning((r) => !r)}
+            onPhaseChange={setCurrentPhase}
           />
         </div>
 
@@ -363,7 +369,7 @@ const ExercisePage = () => {
               secs={breathIn}
               color="var(--blue)"
               bg="var(--blue2)"
-              active={false}
+              active={currentPhase === "Inhale"}
             />
             {breathHold > 0 && (
               <PhaseTag
@@ -371,7 +377,7 @@ const ExercisePage = () => {
                 secs={breathHold}
                 color="var(--purple)"
                 bg="var(--purple2)"
-                active={false}
+                active={currentPhase === "Hold breath"}
               />
             )}
             <PhaseTag
@@ -379,7 +385,7 @@ const ExercisePage = () => {
               secs={breathOut}
               color="var(--teal)"
               bg="var(--teal2)"
-              active={false}
+              active={currentPhase === "Exhale"}
             />
             {hold2 > 0 && (
               <PhaseTag
@@ -387,7 +393,7 @@ const ExercisePage = () => {
                 secs={hold2}
                 color="var(--amber)"
                 bg="var(--amber2)"
-                active={false}
+                active={currentPhase === "Hold again"}
               />
             )}
           </motion.div>

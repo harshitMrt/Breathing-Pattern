@@ -26,7 +26,7 @@ const PHASE_META = {
 
 const CIRCUMFERENCE = 2 * Math.PI * 68;
 
-const BreathingCircle = ({ index, isRunning, onToggle }) => {
+const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
   const { levels } = useAppContext();
   const { user } = useAuth();
   const level = levels[index];
@@ -39,6 +39,14 @@ const BreathingCircle = ({ index, isRunning, onToggle }) => {
 
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState("Welcome! Press Start");
+
+  const updatePhase = useCallback(
+    (p) => {
+      setPhase(p);
+      onPhaseChange?.(p);
+    },
+    [onPhaseChange],
+  );
 
   const progRef = useRef(0);
   const ivIn = useRef(null);
@@ -88,7 +96,7 @@ const BreathingCircle = ({ index, isRunning, onToggle }) => {
     const outStep = 100 / (breathOut * 10);
 
     SoundInhale.play();
-    setPhase("Inhale");
+    updatePhase("Inhale");
 
     ivIn.current = setInterval(() => {
       progRef.current += inStep;
@@ -98,11 +106,11 @@ const BreathingCircle = ({ index, isRunning, onToggle }) => {
         clearInterval(ivIn.current);
 
         if (breathHold > 0) SoundHold.play();
-        setPhase("Hold breath");
+        updatePhase("Hold breath");
 
         toHold.current = setTimeout(() => {
           SoundExhale.play();
-          setPhase("Exhale");
+          updatePhase("Exhale");
 
           ivOut.current = setInterval(() => {
             progRef.current -= outStep;
@@ -115,7 +123,7 @@ const BreathingCircle = ({ index, isRunning, onToggle }) => {
 
               if (hold2 > 0) {
                 SoundHold.play();
-                setPhase("Hold again");
+                updatePhase("Hold again");
               }
             } else {
               setProgress(Math.round(progRef.current));
@@ -126,7 +134,7 @@ const BreathingCircle = ({ index, isRunning, onToggle }) => {
         setProgress(Math.round(progRef.current));
       }
     }, 100);
-  }, [breathIn, breathHold, breathOut, hold2]);
+  }, [breathIn, breathHold, breathOut, hold2, updatePhase]);
 
   useEffect(() => {
     if (isRunning) {
@@ -140,10 +148,10 @@ const BreathingCircle = ({ index, isRunning, onToggle }) => {
       persistSession();
       progRef.current = 0;
       setProgress(0);
-      setPhase("Welcome! Press Start");
+      updatePhase("Welcome! Press Start");
     }
     return clearAll;
-  }, [isRunning, runOneCycle, totalTimer]);
+  }, [isRunning, runOneCycle, totalTimer, persistSession, updatePhase]);
 
   if (!level) return <p style={{ color: "var(--text2)" }}>Select a level</p>;
 
@@ -264,67 +272,7 @@ const BreathingCircle = ({ index, isRunning, onToggle }) => {
         </motion.p>
       </AnimatePresence>
 
-      {isRunning && (
-        <div style={{ display: "flex", gap: 8, marginTop: 20, width: 340 }}>
-          {[
-            [
-              "Inhale",
-              breathIn,
-              "var(--blue2)",
-              "var(--blue)",
-              phase === "Inhale",
-            ],
-            [
-              "Hold",
-              breathHold,
-              "var(--purple2)",
-              "var(--purple)",
-              phase === "Hold breath",
-            ],
-            [
-              "Exhale",
-              breathOut,
-              "var(--teal2)",
-              "var(--teal)",
-              phase === "Exhale",
-            ],
-            ...(hold2 > 0
-              ? [
-                  [
-                    "Hold",
-                    hold2,
-                    "var(--amber2)",
-                    "var(--amber)",
-                    phase === "Hold again",
-                  ],
-                ]
-              : []),
-          ].map(([label, secs, bg, color, active]) => (
-            <div key={label + secs} style={{ flex: 1, textAlign: "center" }}>
-              <div
-                style={{
-                  height: 3,
-                  borderRadius: 2,
-                  background: active ? color : bg,
-                  marginBottom: 6,
-                  transition: "background 0.3s",
-                }}
-              />
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: active ? color : "var(--text3)",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {label}
-              </div>
-              <div style={{ fontSize: 10, color: "var(--text3)" }}>{secs}s</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* phase label only — timeline lives in ExercisePage */}
     </div>
   );
 };

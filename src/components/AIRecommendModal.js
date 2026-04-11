@@ -30,61 +30,29 @@ async function getAIRecommendation({
   duration,
   additionalContext,
 }) {
-  const prompt = `You are a breathwork expert. Design a personalised breathing exercise level.
-
-User needs: ${needs.join(", ")}
-Experience level: ${experience}
-Preferred session duration: ${duration}
-Additional context: ${additionalContext || "None"}
-
-Respond with ONLY a valid JSON object, no markdown, no explanation, exactly this shape:
-{
-  "name": "Short descriptive name (max 5 words)",
-  "technique": "Technique name (e.g. Box Breathing, 4-7-8, Coherent Breathing)",
-  "inn": <inhale seconds, integer 2-8>,
-  "hold": <hold after inhale seconds, integer 0-8>,
-  "out": <exhale seconds, integer 2-10>,
-  "hold2": <hold after exhale seconds, integer 0-4>,
-  "note": "One sentence explaining why this pattern suits the user's needs"
-}`;
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("/api/recommend", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }],
-    }),
+    body: JSON.stringify({ needs, experience, duration, additionalContext }),
   });
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API error: ${response.status} — ${err}`);
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Request failed (${response.status})`);
   }
 
-  const data = await response.json();
-  const text = data.content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const result = await response.json();
 
-  // Strip any accidental markdown fences
-  const clean = text.replace(/```json|```/g, "").trim();
-  const parsed = JSON.parse(clean);
-
-  // Validate required fields
-  const required = ["name", "technique", "inn", "out"];
-  for (const key of required) {
-    if (parsed[key] === undefined) throw new Error(`Missing field: ${key}`);
+  // Ensure required fields
+  if (!result.name || !result.inn || !result.out) {
+    throw new Error("Invalid response from server");
   }
 
-  // Defaults for optional fields
-  parsed.hold = parsed.hold ?? 0;
-  parsed.hold2 = parsed.hold2 ?? 0;
-  parsed.note = parsed.note ?? "";
+  result.hold = result.hold ?? 0;
+  result.hold2 = result.hold2 ?? 0;
+  result.note = result.note ?? "";
 
-  return parsed;
+  return result;
 }
 
 export default function AIRecommendModal({

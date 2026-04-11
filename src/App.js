@@ -1,8 +1,9 @@
 // src/App.js
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppContextProvider } from "./context/context";
+import PublicHome from "./components/PublicHome";
 import AuthPage from "./pages/AuthPage";
 import ExercisePage from "./pages/ExercisePage";
 import HistoryPage from "./pages/HistoryPage";
@@ -11,14 +12,191 @@ import LandingPage from "./components/LandingPage";
 import AIRecommendModal from "./components/AIRecommendModal";
 
 const NAV = [
-  { id: "home", label: "Home", emoji: "🏠" },
-  { id: "breathe", label: "Breathe", emoji: "🌬" },
-  { id: "history", label: "History", emoji: "📊" },
-  { id: "profile", label: "Profile", emoji: "👤" },
+  { id: "home", label: "Home" },
+  { id: "breathe", label: "Breathe" },
+  { id: "history", label: "History" },
 ];
 
+const fade = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.2 },
+};
+
+// ── Avatar dropdown ──────────────────────────────────────
+function AvatarMenu({ user, onProfile, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const initials = (user.displayName || user.email || "?")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const name = user.displayName || user.email?.split("@")[0] || "User";
+  const email = user.email || "";
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={S.avatarTrigger}
+        title={name}
+      >
+        {user.photoURL ? (
+          <img src={user.photoURL} alt={name} style={S.avatarImg} />
+        ) : (
+          <div style={S.avatarFallback}>{initials}</div>
+        )}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="var(--text3)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          style={{
+            transition: "transform 0.2s",
+            transform: open ? "rotate(180deg)" : "none",
+          }}
+        >
+          <path d="M2 4l4 4 4-4" />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={S.dropdown}
+          >
+            {/* User info header */}
+            <div style={S.dropdownHeader}>
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={name} style={S.dropdownAvatar} />
+              ) : (
+                <div
+                  style={{
+                    ...S.avatarFallback,
+                    width: 36,
+                    height: 36,
+                    fontSize: 13,
+                  }}
+                >
+                  {initials}
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "var(--text)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {name}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text3)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {email}
+                </div>
+              </div>
+            </div>
+
+            <div style={S.dropdownDivider} />
+
+            <button
+              style={S.dropdownItem}
+              onClick={() => {
+                onProfile();
+                setOpen(false);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--surface)";
+                e.currentTarget.style.color = "var(--text)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "none";
+                e.currentTarget.style.color = "var(--text2)";
+              }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              >
+                <circle cx="7" cy="4.5" r="2.5" />
+                <path d="M1.5 13c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
+              </svg>
+              View profile
+            </button>
+
+            <div style={S.dropdownDivider} />
+
+            <button
+              style={{ ...S.dropdownItem, color: "#f87171" }}
+              onClick={() => {
+                onLogout();
+                setOpen(false);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(248,113,113,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "none";
+              }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              >
+                <path d="M5 2H3a1 1 0 00-1 1v8a1 1 0 001 1h2M9 10l3-3-3-3M12 7H5" />
+              </svg>
+              Sign out
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Authenticated app shell ──────────────────────────────
 function AppShell() {
-  const { user, userProfile, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [page, setPage] = useState("home");
   const [showAI, setShowAI] = useState(false);
   const [toast, setToast] = useState("");
@@ -28,33 +206,28 @@ function AppShell() {
     setTimeout(() => setToast(""), 3000);
   };
 
-  if (!user) return <AuthPage />;
-
-  const avatar = user.photoURL;
-  const initials = (user.displayName || user.email || "?")
-    .slice(0, 2)
-    .toUpperCase();
-
   return (
     <AppContextProvider uid={user.uid}>
       <div style={S.shell}>
         {/* ── NAV ── */}
         <nav style={S.nav}>
-          {/* Logo */}
           <div style={S.logo} onClick={() => setPage("home")}>
             <div style={S.logoMark}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <circle
-                  cx="9"
-                  cy="9"
-                  r="7"
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M8 2C5 2 3 4.5 3 8C3 11.5 5 14 8 14"
                   stroke="#07101e"
-                  strokeWidth="2"
-                  strokeDasharray="44"
-                  strokeDashoffset="11"
-                  transform="rotate(-90 9 9)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
                 />
-                <circle cx="9" cy="9" r="3.5" fill="#07101e" />
+                <path
+                  d="M8 2C11 2 13 4.5 13 8C13 11.5 11 14 8 14"
+                  stroke="#07101e"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeOpacity="0.5"
+                />
+                <circle cx="8" cy="8" r="2" fill="#07101e" />
               </svg>
             </div>
             <span style={S.logoText}>
@@ -62,47 +235,29 @@ function AppShell() {
             </span>
           </div>
 
-          {/* Nav links */}
           <div style={S.navLinks}>
-            {NAV.map(({ id, label, emoji }) => (
+            {NAV.map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => setPage(id)}
                 style={{ ...S.navBtn, ...(page === id ? S.navBtnActive : {}) }}
               >
-                <span style={{ fontSize: 13 }}>{emoji}</span>
-                <span>{label}</span>
+                {label}
                 {page === id && <div style={S.navIndicator} />}
               </button>
             ))}
           </div>
 
-          {/* Right side */}
           <div style={S.navRight}>
             <button style={S.aiChip} onClick={() => setShowAI(true)}>
-              <span style={{ fontSize: 13 }}>✨</span>
+              <span>✨</span>
               <span>AI Recommend</span>
             </button>
-            <button style={S.avatarBtn} onClick={() => setPage("profile")}>
-              {avatar ? (
-                <img src={avatar} alt="avatar" style={S.avatarImg} />
-              ) : (
-                <div style={S.avatarFallback}>{initials}</div>
-              )}
-            </button>
-            <button style={S.logoutBtn} onClick={logout} title="Sign out">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              >
-                <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" />
-              </svg>
-            </button>
+            <AvatarMenu
+              user={user}
+              onProfile={() => setPage("profile")}
+              onLogout={logout}
+            />
           </div>
         </nav>
 
@@ -128,7 +283,7 @@ function AppShell() {
                 <HistoryPage
                   onUseLevel={(level) => {
                     setPage("breathe");
-                    showToast(`Loaded "${level.name}"`);
+                    showToast(`Loaded "${level.name || level.title}"`);
                   }}
                 />
               </motion.div>
@@ -141,18 +296,19 @@ function AppShell() {
           </AnimatePresence>
         </main>
 
-        {/* AI Modal */}
         <AnimatePresence>
           {showAI && (
             <AIRecommendModal
               onClose={() => setShowAI(false)}
               onLevelCreated={(level) => showToast(`✨ "${level.name}" saved!`)}
-              onPlayLevel={() => setPage("breathe")}
+              onPlayLevel={() => {
+                setPage("breathe");
+                showToast("Level loaded — press Begin!");
+              }}
             />
           )}
         </AnimatePresence>
 
-        {/* Toast */}
         <AnimatePresence>
           {toast && (
             <motion.div
@@ -170,17 +326,60 @@ function AppShell() {
   );
 }
 
-const fade = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.2 },
-};
+// ── Root router ──────────────────────────────────────────
+function Root() {
+  const { user, loading } = useAuth();
+  const [publicView, setPublicView] = useState("public"); // "public" | "signin" | "signup"
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+          style={{
+            width: 36,
+            height: 36,
+            border: "3px solid var(--border)",
+            borderTop: "3px solid var(--teal)",
+            borderRadius: "50%",
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (user) return <AppShell />;
+
+  if (publicView === "public") {
+    return (
+      <PublicHome
+        onSignIn={() => setPublicView("signin")}
+        onSignUp={() => setPublicView("signup")}
+      />
+    );
+  }
+
+  return (
+    <AuthPage
+      initialMode={publicView === "signup" ? "signup" : "login"}
+      onBack={() => setPublicView("public")}
+    />
+  );
+}
 
 export default function App() {
   return (
     <AuthProvider>
-      <AppShell />
+      <Root />
     </AuthProvider>
   );
 }
@@ -198,7 +397,7 @@ const S = {
     justifyContent: "space-between",
     padding: "0 28px",
     height: 58,
-    background: "var(--bg2)",
+    background: "rgba(7,16,30,0.92)",
     borderBottom: "0.5px solid var(--border)",
     position: "sticky",
     top: 0,
@@ -211,11 +410,12 @@ const S = {
     gap: 9,
     cursor: "pointer",
     userSelect: "none",
+    flexShrink: 0,
   },
   logoMark: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     background: "var(--teal)",
     display: "flex",
     alignItems: "center",
@@ -255,7 +455,7 @@ const S = {
     borderRadius: 2,
     background: "var(--teal)",
   },
-  navRight: { display: "flex", alignItems: "center", gap: 10 },
+  navRight: { display: "flex", alignItems: "center", gap: 12 },
   aiChip: {
     display: "flex",
     alignItems: "center",
@@ -268,45 +468,74 @@ const S = {
     fontSize: 12,
     fontWeight: 700,
     cursor: "pointer",
-    transition: "background 0.2s",
     letterSpacing: "0.01em",
+    whiteSpace: "nowrap",
   },
-  avatarBtn: {
-    background: "none",
-    border: "none",
+  avatarTrigger: {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    background: "var(--surface)",
+    border: "0.5px solid var(--border2)",
+    borderRadius: 24,
+    padding: "4px 10px 4px 4px",
     cursor: "pointer",
-    padding: 0,
-    borderRadius: "50%",
+    transition: "background 0.2s",
   },
-  avatarImg: {
-    width: 32,
-    height: 32,
-    borderRadius: "50%",
-    objectFit: "cover",
-    border: "2px solid var(--border2)",
-  },
+  avatarImg: { width: 28, height: 28, borderRadius: "50%", objectFit: "cover" },
   avatarFallback: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: "50%",
     background: "var(--teal)",
     color: "#07101e",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 800,
+    flexShrink: 0,
   },
-  logoutBtn: {
-    background: "none",
-    border: "none",
-    color: "var(--text3)",
-    cursor: "pointer",
-    padding: "6px",
-    borderRadius: 6,
+  dropdown: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    right: 0,
+    background: "var(--bg2)",
+    border: "0.5px solid var(--border2)",
+    borderRadius: 12,
+    minWidth: 220,
+    boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+    overflow: "hidden",
+    zIndex: 500,
+  },
+  dropdownHeader: {
     display: "flex",
     alignItems: "center",
-    transition: "color 0.2s",
+    gap: 10,
+    padding: "14px 16px",
+  },
+  dropdownAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    objectFit: "cover",
+    flexShrink: 0,
+  },
+  dropdownDivider: { height: "0.5px", background: "var(--border)" },
+  dropdownItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    padding: "11px 16px",
+    background: "none",
+    border: "none",
+    fontSize: 13,
+    fontWeight: 500,
+    color: "var(--text2)",
+    cursor: "pointer",
+    textAlign: "left",
+    transition: "background 0.15s, color 0.15s",
   },
   main: { flex: 1, display: "flex", flexDirection: "column" },
   toast: {

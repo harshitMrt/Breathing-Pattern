@@ -289,155 +289,6 @@ const ExercisePage = () => {
         )}
       </section>
 
-      {/* ══ RIGHT — Stats & guide ══ */}
-      <aside style={S.right}>
-        <p style={S.eyebrow}>Session Info</p>
-        <h2 style={S.panelTitle}>Your stats</h2>
-        <div style={S.divider} />
-
-        <div style={S.statsGrid}>
-          {[
-            {
-              label: "Cycle time",
-              value: `${breathIn + breathHold + breathOut + hold2}s`,
-              color: "var(--teal)",
-            },
-            { label: "Inhale", value: `${breathIn}s`, color: "var(--blue)" },
-            {
-              label: "Hold",
-              value: breathHold > 0 ? `${breathHold}s` : "—",
-              color: "var(--purple)",
-            },
-            { label: "Exhale", value: `${breathOut}s`, color: "var(--teal)" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={S.statCard}>
-              <div
-                style={{
-                  fontSize: 20,
-                  fontWeight: 800,
-                  color,
-                  letterSpacing: "-0.5px",
-                }}
-              >
-                {value}
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: "var(--text3)",
-                  marginTop: 4,
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {label}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={S.divider} />
-
-        <p style={{ ...S.eyebrow, marginTop: 4 }}>Technique Guide</p>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-            marginTop: 12,
-          }}
-        >
-          {[
-            {
-              phase: "Inhale",
-              icon: "↑",
-              desc: "Slow nasal breath, expand the belly first then chest.",
-              color: "var(--blue)",
-            },
-            {
-              phase: "Hold",
-              icon: "◆",
-              desc: "Retain air gently. Relax shoulders and jaw.",
-              color: "var(--purple)",
-            },
-            {
-              phase: "Exhale",
-              icon: "↓",
-              desc: "Slow complete exhale through the nose or mouth.",
-              color: "var(--teal)",
-            },
-          ].map(({ phase, icon, desc, color }) => (
-            <div key={phase} style={S.guideCard}>
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  background: `${color}18`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  color,
-                  flexShrink: 0,
-                }}
-              >
-                {icon}
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "var(--text)",
-                    marginBottom: 2,
-                  }}
-                >
-                  {phase}
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text3)",
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {desc}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={S.divider} />
-
-        <div style={S.scienceCard}>
-          <p
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--teal)",
-              margin: "0 0 6px",
-            }}
-          >
-            Did you know?
-          </p>
-          <p
-            style={{
-              fontSize: 12,
-              color: "var(--text2)",
-              lineHeight: 1.65,
-              margin: 0,
-            }}
-          >
-            Just 2 minutes of controlled breathing activates the vagus nerve and
-            reduces cortisol by up to 23%.
-          </p>
-        </div>
-      </aside>
-
       <BreathingModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
       <HelpButton />
     </div>
@@ -449,7 +300,7 @@ export default ExercisePage;
 const S = {
   page: {
     display: "grid",
-    gridTemplateColumns: "290px 1fr 270px",
+    gridTemplateColumns: "420px 1fr",
     minHeight: "calc(100vh - 58px)",
     background: "var(--bg)",
   },
@@ -570,38 +421,6 @@ const S = {
     zIndex: 1,
     maxWidth: 260,
     lineHeight: 1.6,
-  },
-
-  right: {
-    borderLeft: "0.5px solid var(--border)",
-    padding: "28px 18px",
-    overflowY: "auto",
-    background: "var(--bg2)",
-    display: "flex",
-    flexDirection: "column",
-  },
-  statsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
-  statCard: {
-    background: "var(--surface)",
-    border: "0.5px solid var(--border)",
-    borderRadius: 12,
-    padding: "14px 14px",
-  },
-  guideCard: {
-    display: "flex",
-    gap: 10,
-    alignItems: "flex-start",
-    background: "var(--surface)",
-    border: "0.5px solid var(--border)",
-    borderRadius: 10,
-    padding: "12px 14px",
-  },
-  scienceCard: {
-    marginTop: 4,
-    background: "rgba(29,229,200,0.05)",
-    border: "0.5px solid rgba(29,229,200,0.2)",
-    borderRadius: 12,
-    padding: "14px 16px",
   },
 
   eyebrow: {

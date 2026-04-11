@@ -1,112 +1,330 @@
+// src/components/BreathingCircle.js
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from "../context/context";
-import exhale from "../audio.mp3/Exhale.mp3";
-import Inhale from "../audio.mp3/start Breathing.mp3";
-import HoldBreath from "../audio.mp3/Hold Breath.mp3";
+import { useAuth } from "../context/AuthContext";
+import { saveSession } from "../services/firestoreService";
 
-const StartBreathing = new Audio(Inhale);
-const Exhale = new Audio(exhale);
-const holdBreath = new Audio(HoldBreath);
+import exhaleAudio from "../audio.mp3/Exhale.mp3";
+import inhaleAudio from "../audio.mp3/start Breathing.mp3";
+import holdAudio from "../audio.mp3/Hold Breath.mp3";
+
+const SoundInhale = new Audio(inhaleAudio);
+const SoundExhale = new Audio(exhaleAudio);
+const SoundHold = new Audio(holdAudio);
+
+const PHASE_META = {
+  "Welcome! Press Start": {
+    color: "var(--text3)",
+    ring: "rgba(255,255,255,0.08)",
+  },
+  Inhale: { color: "var(--blue)", ring: "var(--blue)" },
+  "Hold breath": { color: "var(--purple)", ring: "var(--purple)" },
+  Exhale: { color: "var(--teal)", ring: "var(--teal)" },
+  "Hold again": { color: "var(--amber)", ring: "var(--amber)" },
+};
+
+const CIRCUMFERENCE = 2 * Math.PI * 68;
 
 const BreathingCircle = ({ index, isRunning, onToggle }) => {
-  const [progress, setProgress] = useState(0);
-  const [instruction, setInstruction] = useState("Welcome! Press Start Button");
-  const [cycle, setCycle] = useState(1);
-
   const { levels } = useAppContext();
+  const { user } = useAuth();
+  const level = levels[index];
 
-  const selectedLEVEL = levels[index];
+  const breathIn = level?.inn ?? 4;
+  const breathHold = level?.hold ?? 4;
+  const breathOut = level?.out ?? 4;
+  const hold2 = level?.hold2 ?? 0;
+  const totalTimer = breathIn + breathHold + breathOut + hold2;
 
-  const breathIn = selectedLEVEL.inn;
-  const breathHold = selectedLEVEL.hold;
-  const breathOut = selectedLEVEL.out;
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState("Welcome! Press Start");
 
-  const interval = useRef(null);
-  const intervalSecond = useRef(null);
-  const intervalThird = useRef(null);
-  const timeout = useRef(null);
-  const progressValueRef = useRef(0);
+  const progRef = useRef(0);
+  const ivIn = useRef(null);
+  const ivOut = useRef(null);
+  const ivCycle = useRef(null);
+  const toHold = useRef(null);
+  const toHold2 = useRef(null);
 
-  const hold2 = selectedLEVEL.hold2 || 0;
+  // Session tracking
+  const sessionStartRef = useRef(null);
+  const cycleCountRef = useRef(0);
 
-  let timer = breathIn + breathHold + breathOut + hold2;
+  const clearAll = () => {
+    [ivIn, ivOut, ivCycle].forEach((r) => {
+      clearInterval(r.current);
+      r.current = null;
+    });
+    [toHold, toHold2].forEach((r) => {
+      clearTimeout(r.current);
+      r.current = null;
+    });
+  };
 
-  const runProgress = useCallback(() => {
-    const inTime = 100 / (breathIn * 10);
-    const holdTime = breathHold * 1000;
-    const outTime = 100 / (breathOut * 10);
+  // Save session when stopped
+  const persistSession = useCallback(async () => {
+    if (!user || !sessionStartRef.current || cycleCountRef.current === 0)
+      return;
+    const durationMs = Date.now() - sessionStartRef.current;
+    const durationMinutes = parseFloat((durationMs / 60000).toFixed(2));
+    try {
+      await saveSession(user.uid, {
+        levelName: level?.name ?? `Level ${index + 1}`,
+        inn: breathIn,
+        hold: breathHold,
+        out: breathOut,
+        hold2,
+        durationMinutes,
+        cycles: cycleCountRef.current,
+      });
+    } catch (e) {
+      console.error("Failed to save session:", e);
+    }
+  }, [user, level, index, breathIn, breathHold, breathOut, hold2]);
 
-    StartBreathing.play();
-    setInstruction("Inhale/Exhale");
+  const runOneCycle = useCallback(() => {
+    const inStep = 100 / (breathIn * 10);
+    const outStep = 100 / (breathOut * 10);
 
-    interval.current = setInterval(() => {
-      if (progressValueRef.current >= 100) {
-        if (breathHold > 0) holdBreath.play();
-        clearInterval(interval.current);
-        setInstruction("Hold Breath");
+    SoundInhale.play();
+    setPhase("Inhale");
 
-        timeout.current = setTimeout(() => {
-          Exhale.play();
-          setInstruction("Inhale/Exhale");
-          intervalSecond.current = setInterval(() => {
-            if (progressValueRef.current <= 0) {
-              clearInterval(intervalSecond.current);
+    ivIn.current = setInterval(() => {
+      progRef.current += inStep;
+      if (progRef.current >= 100) {
+        progRef.current = 100;
+        setProgress(100);
+        clearInterval(ivIn.current);
+
+        if (breathHold > 0) SoundHold.play();
+        setPhase("Hold breath");
+
+        toHold.current = setTimeout(() => {
+          SoundExhale.play();
+          setPhase("Exhale");
+
+          ivOut.current = setInterval(() => {
+            progRef.current -= outStep;
+            if (progRef.current <= 0) {
+              progRef.current = 0;
+              setProgress(0);
+              clearInterval(ivOut.current);
+
+              cycleCountRef.current += 1;
+
               if (hold2 > 0) {
-                setInstruction("Hold again");
-                holdBreath.play();
+                SoundHold.play();
+                setPhase("Hold again");
               }
             } else {
-              progressValueRef.current -= outTime;
-              setProgress(Math.max(0, Math.round(progressValueRef.current)));
+              setProgress(Math.round(progRef.current));
             }
           }, 100);
-        }, holdTime);
+        }, breathHold * 1000);
       } else {
-        progressValueRef.current += inTime;
-        setProgress(Math.min(100, Math.round(progressValueRef.current)));
+        setProgress(Math.round(progRef.current));
       }
     }, 100);
   }, [breathIn, breathHold, breathOut, hold2]);
 
   useEffect(() => {
     if (isRunning) {
-      runProgress();
-
-      intervalThird.current = setInterval(() => {
-        runProgress();
-      }, timer * 1000 + cycle * 1000);
+      progRef.current = 0;
+      cycleCountRef.current = 0;
+      sessionStartRef.current = Date.now();
+      runOneCycle();
+      ivCycle.current = setInterval(runOneCycle, totalTimer * 1000);
     } else {
-      clearInterval(intervalThird.current);
-      clearInterval(interval.current);
-      clearTimeout(timeout.current);
-      clearInterval(intervalSecond.current);
-
-      progressValueRef.current = 0;
+      clearAll();
+      persistSession();
+      progRef.current = 0;
       setProgress(0);
+      setPhase("Welcome! Press Start");
     }
-    return () => {
-      clearInterval(intervalThird.current);
-      clearInterval(interval.current);
-      clearTimeout(timeout.current);
-      clearInterval(intervalSecond.current);
-    };
-  }, [isRunning, timer, runProgress, cycle]);
+    return clearAll;
+  }, [isRunning, runOneCycle, totalTimer]);
 
-  if (!selectedLEVEL) return <p>Select Level</p>;
+  if (!level) return <p style={{ color: "var(--text2)" }}>Select a level</p>;
 
-  const scale = progress === 100 ? 1.1 : (progress / 100) * 0.1 + 1;
+  const meta = PHASE_META[phase] ?? PHASE_META["Welcome! Press Start"];
+  const offset = CIRCUMFERENCE - (progress / 100) * CIRCUMFERENCE;
+  const scale = 1 + (progress / 100) * 0.08;
 
   return (
-    <div className="flex flex-col items-center justify-center p-1">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 0,
+      }}
+    >
       <motion.div
-        className="w-40 h-40 bg-white bg-opacity-20 rounded-full flex items-center justify-center shadow-lg"
         animate={{ scale }}
-        transition={{ duration: 0.1, ease: "easeInOut" }}
+        transition={{
+          duration: 0.3,
+          ease: "easeOut",
+          type: "spring",
+          stiffness: 100,
+          damping: 15,
+        }}
+        style={{ position: "relative", width: 200, height: 200 }}
       >
-        <div className="text-3xl font-bold text-white">{progress}</div>
+        <svg
+          width="200"
+          height="200"
+          viewBox="0 0 200 200"
+          style={{ display: "block" }}
+        >
+          {/* track */}
+          <circle
+            cx="100"
+            cy="100"
+            r="68"
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="10"
+          />
+          {/* progress ring */}
+          <circle
+            cx="100"
+            cy="100"
+            r="68"
+            fill="none"
+            stroke={meta.ring}
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={offset}
+            transform="rotate(-90 100 100)"
+            style={{
+              transition: "stroke-dashoffset 0.12s linear, stroke 0.6s ease",
+            }}
+          />
+          {/* inner circle */}
+          <circle
+            cx="100"
+            cy="100"
+            r="54"
+            fill="rgba(29,229,200,0.04)"
+            stroke="rgba(29,229,200,0.10)"
+            strokeWidth="0.5"
+          />
+        </svg>
+
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%,-50%)",
+            textAlign: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={progress}
+              initial={{ opacity: 0.6, scale: 0.88 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.88 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              style={{
+                fontSize: 44,
+                fontWeight: 800,
+                letterSpacing: "-2px",
+                lineHeight: 1,
+              }}
+            >
+              {progress}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </motion.div>
-      <p className="mt-8 text-base text-white text-center">{instruction}</p>
+
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={phase}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: meta.color,
+            marginTop: 18,
+            transition: "color 0.4s ease",
+          }}
+        >
+          {phase}
+        </motion.p>
+      </AnimatePresence>
+
+      {isRunning && (
+        <div style={{ display: "flex", gap: 8, marginTop: 20, width: 340 }}>
+          {[
+            [
+              "Inhale",
+              breathIn,
+              "var(--blue2)",
+              "var(--blue)",
+              phase === "Inhale",
+            ],
+            [
+              "Hold",
+              breathHold,
+              "var(--purple2)",
+              "var(--purple)",
+              phase === "Hold breath",
+            ],
+            [
+              "Exhale",
+              breathOut,
+              "var(--teal2)",
+              "var(--teal)",
+              phase === "Exhale",
+            ],
+            ...(hold2 > 0
+              ? [
+                  [
+                    "Hold",
+                    hold2,
+                    "var(--amber2)",
+                    "var(--amber)",
+                    phase === "Hold again",
+                  ],
+                ]
+              : []),
+          ].map(([label, secs, bg, color, active]) => (
+            <div key={label + secs} style={{ flex: 1, textAlign: "center" }}>
+              <div
+                style={{
+                  height: 3,
+                  borderRadius: 2,
+                  background: active ? color : bg,
+                  marginBottom: 6,
+                  transition: "background 0.3s",
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: active ? color : "var(--text3)",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {label}
+              </div>
+              <div style={{ fontSize: 10, color: "var(--text3)" }}>{secs}s</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,63 +1,195 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+
+const TIPS = [
+  {
+    title: "Follow the ring",
+    body: "Breathe in when the ring fills, out when it drains. Match the visual rhythm.",
+  },
+  {
+    title: "Select a pattern",
+    body: "Use the sidebar to switch between breathing levels at any time.",
+  },
+  {
+    title: "Create custom",
+    body: "Click New Level to build a pattern with your own inhale, hold, and exhale timing.",
+  },
+  {
+    title: "Best results",
+    body: "Practice in a quiet space, seated comfortably. Consistency beats intensity.",
+  },
+];
 
 const HelpButton = () => {
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-4 right-4">
-      <button
-        onClick={() => setShowTooltip(!showTooltip)}
-        className="w-12 h-12 bg-white bg-opacity-20 text-white rounded-full shadow-lg hover:bg-opacity-30 transition flex items-center justify-center text-xl font-bold"
+    <>
+      {/* trigger */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 150,
+        }}
       >
-        ?
-      </button>
-      {showTooltip && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={() => setShowTooltip(false)}
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Help"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            background: "var(--surface)",
+            border: "0.5px solid var(--border2)",
+            color: "var(--text2)",
+            fontSize: 16,
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background 0.2s, color 0.2s",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--surface2)";
+            e.currentTarget.style.color = "var(--text)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "var(--surface)";
+            e.currentTarget.style.color = "var(--text2)";
+          }}
         >
+          ?
+        </button>
+      </div>
+
+      {/* modal */}
+      <AnimatePresence>
+        {open && (
           <motion.div
-            className="bg-white rounded-lg p-8 max-w-md mx-4 shadow-2xl"
-            initial={{ opacity: 0, scale: 1.6, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 1.6, y: 50 }}
-            transition={{ duration: 0.6 }}
-            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 300,
+              background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(10px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+            onClick={() => setOpen(false)}
           >
-            <div className="text-center">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">
-                How to Use the Breathing App
-              </h3>
-              <div className="text-gray-600 space-y-3">
-                <p>
-                  <strong>Follow the breathing pattern:</strong> Inhale, Hold,
-                  Exhale, Hold
-                </p>
-                <p>
-                  <strong>Create custom levels:</strong> Click "Create Level" to
-                  add your own breathing patterns
-                </p>
-                <p>
-                  <strong>Select different patterns:</strong> Use the "Levels"
-                  button to choose from available patterns
-                </p>
-                <p>
-                  <strong>Best results:</strong> Practice consistently in a
-                  quiet environment
-                </p>
-              </div>
-              <button
-                onClick={() => setShowTooltip(false)}
-                className="mt-6 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition"
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0, y: 24 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.88, opacity: 0, y: 24 }}
+              transition={{
+                duration: 0.3,
+                ease: "easeOut",
+                type: "spring",
+                stiffness: 140,
+                damping: 18,
+              }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: 420,
+                background: "var(--bg2)",
+                border: "0.5px solid var(--border2)",
+                borderRadius: "var(--r16)",
+                padding: 32,
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--teal)",
+                  margin: "0 0 6px",
+                }}
               >
-                Got it!
+                Guide
+              </p>
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 24px" }}>
+                How to use BreatheFlow
+              </h3>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                  marginBottom: 28,
+                }}
+              >
+                {TIPS.map(({ title, body }) => (
+                  <div
+                    key={title}
+                    style={{
+                      background: "var(--surface)",
+                      border: "0.5px solid var(--border)",
+                      borderRadius: "var(--r10)",
+                      padding: "14px 16px",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--text)",
+                        margin: "0 0 4px",
+                      }}
+                    >
+                      {title}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text2)",
+                        margin: 0,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setOpen(false)}
+                style={{
+                  width: "100%",
+                  background: "var(--teal)",
+                  color: "#07101e",
+                  border: "none",
+                  padding: "12px",
+                  borderRadius: "var(--r10)",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "opacity 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                Got it
               </button>
-            </div>
+            </motion.div>
           </motion.div>
-        </div>
-      )}
-    </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

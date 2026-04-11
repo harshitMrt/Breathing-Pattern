@@ -18,7 +18,7 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null); // Firestore profile
+  const [_userProfile, setUserProfile] = useState(null); // Firestore profile
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        userProfile,
+        _userProfile,
         loading,
         error,
         clearError,

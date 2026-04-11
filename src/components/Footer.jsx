@@ -46,7 +46,7 @@ const SOCIALS = [
   },
   {
     label: "Instagram",
-    href: "https://instagram.com/youraccount",
+    href: "#",
     icon: (
       <svg
         width="14"

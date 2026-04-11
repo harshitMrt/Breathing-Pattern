@@ -57,8 +57,6 @@ export default function HistoryPage({ onUseLevel }) {
       setLevels(l);
       setLoading(false);
     };
-
-    load();
   }, [user.uid]);
 
   const handleDeleteSession = async (id) => {

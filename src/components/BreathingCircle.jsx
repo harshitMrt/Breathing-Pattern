@@ -1,4 +1,4 @@
-// src/components/BreathingCircle.js
+// src/components/BreathingCircle.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from "../context/context";
@@ -26,6 +26,7 @@ const PHASE_META = {
 
 const CIRCUMFERENCE = 2 * Math.PI * 68;
 
+// ─── onPhaseChange is new — ExercisePage passes setCurrentPhase here
 const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
   const { levels } = useAppContext();
   const { user } = useAuth();
@@ -40,14 +41,6 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState("Welcome! Press Start");
 
-  const updatePhase = useCallback(
-    (p) => {
-      setPhase(p);
-      onPhaseChange?.(p);
-    },
-    [onPhaseChange],
-  );
-
   const progRef = useRef(0);
   const ivIn = useRef(null);
   const ivOut = useRef(null);
@@ -55,9 +48,17 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
   const toHold = useRef(null);
   const toHold2 = useRef(null);
 
-  // Session tracking
   const sessionStartRef = useRef(null);
   const cycleCountRef = useRef(0);
+
+  // Wrapper so phase changes also bubble up to ExercisePage
+  const changePhase = useCallback(
+    (p) => {
+      setPhase(p);
+      onPhaseChange?.(p);
+    },
+    [onPhaseChange],
+  );
 
   const clearAll = () => {
     [ivIn, ivOut, ivCycle].forEach((r) => {
@@ -70,7 +71,6 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
     });
   };
 
-  // Save session when stopped
   const persistSession = useCallback(async () => {
     if (!user || !sessionStartRef.current || cycleCountRef.current === 0)
       return;
@@ -78,7 +78,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
     const durationMinutes = parseFloat((durationMs / 60000).toFixed(2));
     try {
       await saveSession(user.uid, {
-        levelName: level?.name ?? `Level ${index + 1}`,
+        levelName: level?.name ?? level?.title ?? `Level ${index + 1}`,
         inn: breathIn,
         hold: breathHold,
         out: breathOut,
@@ -96,7 +96,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
     const outStep = 100 / (breathOut * 10);
 
     SoundInhale.play();
-    updatePhase("Inhale");
+    changePhase("Inhale");
 
     ivIn.current = setInterval(() => {
       progRef.current += inStep;
@@ -106,11 +106,11 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
         clearInterval(ivIn.current);
 
         if (breathHold > 0) SoundHold.play();
-        updatePhase("Hold breath");
+        changePhase("Hold breath");
 
         toHold.current = setTimeout(() => {
           SoundExhale.play();
-          updatePhase("Exhale");
+          changePhase("Exhale");
 
           ivOut.current = setInterval(() => {
             progRef.current -= outStep;
@@ -118,12 +118,10 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
               progRef.current = 0;
               setProgress(0);
               clearInterval(ivOut.current);
-
               cycleCountRef.current += 1;
-
               if (hold2 > 0) {
                 SoundHold.play();
-                updatePhase("Hold again");
+                changePhase("Hold again");
               }
             } else {
               setProgress(Math.round(progRef.current));
@@ -134,7 +132,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
         setProgress(Math.round(progRef.current));
       }
     }, 100);
-  }, [breathIn, breathHold, breathOut, hold2, updatePhase]);
+  }, [breathIn, breathHold, breathOut, hold2, changePhase]);
 
   useEffect(() => {
     if (isRunning) {
@@ -148,10 +146,10 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
       persistSession();
       progRef.current = 0;
       setProgress(0);
-      updatePhase("Welcome! Press Start");
+      changePhase("Welcome! Press Start");
     }
     return clearAll;
-  }, [isRunning, runOneCycle, totalTimer, persistSession, updatePhase]);
+  }, [isRunning, runOneCycle, totalTimer]);
 
   if (!level) return <p style={{ color: "var(--text2)" }}>Select a level</p>;
 
@@ -194,7 +192,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
             stroke="rgba(255,255,255,0.06)"
             strokeWidth="10"
           />
-          {/* progress ring */}
+          {/* progress ring — no static pre-filled arc */}
           <circle
             cx="100"
             cy="100"
@@ -221,6 +219,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
           />
         </svg>
 
+        {/* centre number */}
         <div
           style={{
             position: "absolute",
@@ -251,6 +250,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
         </div>
       </motion.div>
 
+      {/* phase label */}
       <AnimatePresence mode="wait">
         <motion.p
           key={phase}
@@ -271,8 +271,6 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange }) => {
           {phase}
         </motion.p>
       </AnimatePresence>
-
-      {/* phase label only — timeline lives in ExercisePage */}
     </div>
   );
 };

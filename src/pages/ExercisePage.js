@@ -3,10 +3,11 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from "../context/context";
 import BreathingCircle from "../components/BreathingCircle";
+import LevelList from "../components/LevelList"; // ← the beautiful one
 import BreathingModal from "../components/BreathingModal";
 import HelpButton from "../components/HelpButton";
 
-/* ── tiny helpers ── */
+/* ── Phase track bar ── */
 const PhaseTag = ({ label, secs, color, bg, active }) => (
   <div style={{ flex: 1, textAlign: "center" }}>
     <div
@@ -36,160 +37,22 @@ const PhaseTag = ({ label, secs, color, bg, active }) => (
   </div>
 );
 
-const LevelCard = ({ level, index, selected, onSelect, onDelete }) => {
-  const colors = [
-    {
-      dot: "var(--teal)",
-      bg: "rgba(29,229,200,0.08)",
-      badge: "var(--teal)",
-      badgeBg: "rgba(29,229,200,0.12)",
-    },
-    {
-      dot: "var(--blue)",
-      bg: "rgba(91,156,246,0.08)",
-      badge: "var(--blue)",
-      badgeBg: "rgba(91,156,246,0.12)",
-    },
-    {
-      dot: "var(--amber)",
-      bg: "rgba(245,158,11,0.08)",
-      badge: "var(--amber)",
-      badgeBg: "rgba(245,158,11,0.12)",
-    },
-    {
-      dot: "var(--purple)",
-      bg: "rgba(139,92,246,0.08)",
-      badge: "var(--purple)",
-      badgeBg: "rgba(139,92,246,0.12)",
-    },
-  ];
-  const c = colors[index % colors.length];
-  const pattern = `${level.inn}-${level.hold > 0 ? level.hold + "-" : ""}${level.out}${level.hold2 > 0 ? "-" + level.hold2 : ""}`;
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ scale: 1.015 }}
-      onClick={() => onSelect(index)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "12px 14px",
-        borderRadius: 12,
-        cursor: "pointer",
-        marginBottom: 4,
-        background: selected ? c.bg : "transparent",
-        border: selected ? `0.5px solid ${c.dot}40` : "0.5px solid transparent",
-        transition: "background 0.2s, border-color 0.2s",
-      }}
-    >
-      {/* colour dot */}
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: c.dot,
-          flexShrink: 0,
-        }}
-      />
-
-      {/* text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: selected ? 600 : 400,
-            color: selected ? "var(--text)" : "var(--text2)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {level.title}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
-          {pattern}
-        </div>
-      </div>
-
-      {/* badge + delete */}
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
-      >
-        {level.isCustom && (
-          <span
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              padding: "2px 7px",
-              borderRadius: 10,
-              background: c.badgeBg,
-              color: c.badge,
-            }}
-          >
-            Custom
-          </span>
-        )}
-        {!level.isDefault && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(level.id);
-            }}
-            style={{
-              background: "rgba(226,75,74,0.1)",
-              border: "none",
-              borderRadius: 6,
-              color: "#e24b4a",
-              width: 22,
-              height: 22,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-          >
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 10 10"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            >
-              <line x1="1" y1="1" x2="9" y2="9" />
-              <line x1="9" y1="1" x2="1" y2="9" />
-            </svg>
-          </button>
-        )}
-      </div>
-    </motion.div>
-  );
-};
-
 /* ══ MAIN PAGE ══ */
 const ExercisePage = () => {
   const { levels, deleteLevel, loadingLevels, lastAddedIndex } =
     useAppContext();
+
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPhase, setCurrentPhase] = useState("Welcome! Press Start");
 
-  // Auto-select newly added level
+  // Auto-select a newly created level the moment it appears
   useEffect(() => {
     if (lastAddedIndex !== null && lastAddedIndex < levels.length) {
       setIsRunning(false);
       setSelectedIndex(lastAddedIndex);
+      setCurrentPhase("Welcome! Press Start");
     }
   }, [lastAddedIndex, levels.length]);
 
@@ -199,11 +62,13 @@ const ExercisePage = () => {
   const breathOut = level?.out ?? 4;
   const hold2 = level?.hold2 ?? 0;
 
+  // LevelList calls this with the clicked index
   const handleSelect = (i) => {
     setIsRunning(false);
     setSelectedIndex(i);
     setCurrentPhase("Welcome! Press Start");
   };
+
   const handleDelete = async (id) => {
     const idx = levels.findIndex((l) => l.id === id);
     await deleteLevel(id);
@@ -216,9 +81,8 @@ const ExercisePage = () => {
 
   return (
     <div style={S.page}>
-      {/* ══ LEFT PANEL — Levels ══ */}
+      {/* ══ LEFT — Level list ══ */}
       <aside style={S.left}>
-        {/* header */}
         <div style={S.panelHeader}>
           <div>
             <p style={S.eyebrow}>Breathing Levels</p>
@@ -249,7 +113,6 @@ const ExercisePage = () => {
 
         <div style={S.divider} />
 
-        {/* level list */}
         {loadingLevels ? (
           <div
             style={{
@@ -262,73 +125,21 @@ const ExercisePage = () => {
             Loading…
           </div>
         ) : (
-          <AnimatePresence>
-            {levels.map((lvl, i) => (
-              <LevelCard
-                key={lvl.id}
-                level={lvl}
-                index={i}
-                selected={i === selectedIndex}
-                onSelect={handleSelect}
-                onDelete={handleDelete}
-              />
-            ))}
-          </AnimatePresence>
-        )}
-
-        {/* selected level detail */}
-        {level && (
-          <div style={S.levelDetail}>
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.07em",
-                textTransform: "uppercase",
-                color: "var(--teal)",
-                margin: "0 0 6px",
-              }}
-            >
-              About this pattern
-            </p>
-            <p
-              style={{
-                fontSize: 12,
-                color: "var(--text2)",
-                lineHeight: 1.65,
-                margin: 0,
-              }}
-            >
-              {level.description}
-            </p>
-            {level.technique && (
-              <span
-                style={{
-                  display: "inline-block",
-                  marginTop: 10,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  padding: "3px 9px",
-                  borderRadius: 10,
-                  background: "rgba(29,229,200,0.1)",
-                  color: "var(--teal)",
-                }}
-              >
-                {level.technique}
-              </span>
-            )}
-          </div>
+          /*
+            LevelList expects:
+              onSelect(index)   — called when a card is clicked
+              selectedIndex     — index of the active level (for highlighting)
+            It reads `levels` from context itself via useAppContext()
+          */
+          <LevelList onSelect={handleSelect} selectedIndex={selectedIndex} />
         )}
       </aside>
 
       {/* ══ CENTER — Breathing circle ══ */}
       <section style={S.center}>
-        {/* ambient glow behind the circle */}
         <div style={S.glow} />
 
-        {/* title */}
+        {/* title block */}
         <AnimatePresence mode="wait">
           <motion.div
             key={selectedIndex}
@@ -347,7 +158,7 @@ const ExercisePage = () => {
           </motion.div>
         </AnimatePresence>
 
-        {/* the circle */}
+        {/* circle — onPhaseChange keeps currentPhase in sync for the phase track below */}
         <div style={{ zIndex: 1 }}>
           <BreathingCircle
             index={selectedIndex}
@@ -357,7 +168,7 @@ const ExercisePage = () => {
           />
         </div>
 
-        {/* phase track */}
+        {/* live phase track */}
         {isRunning && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -399,7 +210,7 @@ const ExercisePage = () => {
           </motion.div>
         )}
 
-        {/* controls */}
+        {/* start / stop */}
         <div
           style={{
             display: "flex",
@@ -467,7 +278,6 @@ const ExercisePage = () => {
           </button>
         </div>
 
-        {/* session tip */}
         {!isRunning && (
           <motion.p
             initial={{ opacity: 0 }}
@@ -479,13 +289,12 @@ const ExercisePage = () => {
         )}
       </section>
 
-      {/* ══ RIGHT PANEL — Stats + quick info ══ */}
+      {/* ══ RIGHT — Stats & guide ══ */}
       <aside style={S.right}>
         <p style={S.eyebrow}>Session Info</p>
         <h2 style={S.panelTitle}>Your stats</h2>
         <div style={S.divider} />
 
-        {/* stat cards */}
         <div style={S.statsGrid}>
           {[
             {
@@ -529,7 +338,6 @@ const ExercisePage = () => {
 
         <div style={S.divider} />
 
-        {/* technique guide */}
         <p style={{ ...S.eyebrow, marginTop: 4 }}>Technique Guide</p>
         <div
           style={{
@@ -603,7 +411,6 @@ const ExercisePage = () => {
 
         <div style={S.divider} />
 
-        {/* science callout */}
         <div style={S.scienceCard}>
           <p
             style={{
@@ -631,7 +438,6 @@ const ExercisePage = () => {
         </div>
       </aside>
 
-      {/* Modals */}
       <BreathingModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
       <HelpButton />
     </div>
@@ -643,20 +449,18 @@ export default ExercisePage;
 const S = {
   page: {
     display: "grid",
-    gridTemplateColumns: "270px 1fr 270px",
+    gridTemplateColumns: "290px 1fr 270px",
     minHeight: "calc(100vh - 58px)",
     background: "var(--bg)",
   },
 
-  /* LEFT */
   left: {
     borderRight: "0.5px solid var(--border)",
-    padding: "28px 18px",
+    padding: "28px 16px",
     overflowY: "auto",
     background: "var(--bg2)",
     display: "flex",
     flexDirection: "column",
-    gap: 0,
   },
   panelHeader: {
     display: "flex",
@@ -679,14 +483,7 @@ const S = {
     transition: "background 0.2s, color 0.2s",
     whiteSpace: "nowrap",
   },
-  levelDetail: {
-    marginTop: "auto",
-    paddingTop: 20,
-    borderTop: "0.5px solid var(--border)",
-    marginBottom: 0,
-  },
 
-  /* CENTER */
   center: {
     display: "flex",
     flexDirection: "column",
@@ -700,7 +497,7 @@ const S = {
     position: "absolute",
     top: "50%",
     left: "50%",
-    transform: "translate(-50%, -50%)",
+    transform: "translate(-50%,-50%)",
     width: 500,
     height: 500,
     borderRadius: "50%",
@@ -775,7 +572,6 @@ const S = {
     lineHeight: 1.6,
   },
 
-  /* RIGHT */
   right: {
     borderLeft: "0.5px solid var(--border)",
     padding: "28px 18px",
@@ -784,12 +580,7 @@ const S = {
     display: "flex",
     flexDirection: "column",
   },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 10,
-    marginTop: 0,
-  },
+  statsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
   statCard: {
     background: "var(--surface)",
     border: "0.5px solid var(--border)",
@@ -813,7 +604,6 @@ const S = {
     padding: "14px 16px",
   },
 
-  /* shared */
   eyebrow: {
     fontSize: 10,
     fontWeight: 700,

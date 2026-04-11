@@ -1,6 +1,5 @@
 import React from "react";
 import { motion } from "framer-motion";
-import Header from "./Header";
 import Footer from "./Footer";
 
 /* ── animation presets ── */
@@ -342,8 +341,6 @@ const LandingPage = ({ onStart }) => {
         flexDirection: "column",
       }}
     >
-      <Header onHomeClick={onStart} />
-
       <main style={{ flex: 1 }}>
         {/* ── HERO ── */}
         <section

@@ -128,55 +128,6 @@ export default function PublicHome({ onSignIn, onSignUp }) {
         color: "var(--text)",
       }}
     >
-      {/* ── NAVBAR ── */}
-      <header style={S.header}>
-        <div style={S.headerInner}>
-          {/* Logo */}
-          <div style={S.logo}>
-            <div style={S.logoMark}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M8 2C5 2 3 4.5 3 8C3 11.5 5 14 8 14"
-                  stroke="#07101e"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M8 2C11 2 13 4.5 13 8C13 11.5 11 14 8 14"
-                  stroke="#07101e"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeOpacity="0.5"
-                />
-                <circle cx="8" cy="8" r="2" fill="#07101e" />
-              </svg>
-            </div>
-            <span style={S.logoText}>
-              Breathe<span style={{ color: "var(--teal)" }}>Flow</span>
-            </span>
-          </div>
-
-          {/* Nav links */}
-          <nav style={{ display: "flex", gap: 4 }}>
-            {["Features", "Techniques", "About"].map((label) => (
-              <button key={label} style={S.navLink}>
-                {label}
-              </button>
-            ))}
-          </nav>
-
-          {/* Auth buttons */}
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button style={S.signInBtn} onClick={onSignIn}>
-              Sign in
-            </button>
-            <button style={S.signUpBtn} onClick={onSignUp}>
-              Get started free
-            </button>
-          </div>
-        </div>
-      </header>
-
       {/* ── HERO ── */}
       <section style={S.hero}>
         {/* background glow */}

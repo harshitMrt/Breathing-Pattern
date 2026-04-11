@@ -46,18 +46,18 @@ export default function HistoryPage({ onUseLevel }) {
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
-    const [s, l] = await Promise.all([
-      getUserSessions(user.uid),
-      getUserCustomLevels(user.uid),
-    ]);
-    setSessions(s);
-    setLevels(l);
-    setLoading(false);
-  };
-
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const [s, l] = await Promise.all([
+        getUserSessions(user.uid),
+        getUserCustomLevels(user.uid),
+      ]);
+      setSessions(s);
+      setLevels(l);
+      setLoading(false);
+    };
+
     load();
   }, [user.uid]);
 

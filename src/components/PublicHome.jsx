@@ -137,7 +137,7 @@ export default function PublicHome({ onSignIn, onSignUp }) {
         <div style={S.heroContent}>
           <motion.div {...fadeUp(0)} style={S.badge}>
             <span style={S.badgeDot} />
-            Backed by neuroscience · Free to use
+            Backed by FireBase, Node.js, Express · Free to use
           </motion.div>
 
           <motion.h1 {...fadeUp(0.08)} style={S.heroTitle}>
@@ -176,7 +176,7 @@ export default function PublicHome({ onSignIn, onSignUp }) {
             {[
               { val: "50K+", label: "Users" },
               { val: "4.9★", label: "Rating" },
-              { val: "7", label: "Techniques" },
+              { val: "4+", label: "Techniques" },
               { val: "2 min", label: "To feel calm" },
             ].map(({ val, label }) => (
               <div key={label} style={S.stat}>

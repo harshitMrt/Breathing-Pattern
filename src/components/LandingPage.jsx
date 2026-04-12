@@ -200,7 +200,7 @@ const STEPS = [
 const STATS = [
   { val: "50K+", label: "Active users" },
   { val: "4.9★", label: "Average rating" },
-  { val: "7", label: "Breathing patterns" },
+  { val: "4+", label: "Breathing patterns" },
   { val: "2 min", label: "To feel the effect" },
 ];
 
@@ -408,7 +408,7 @@ const LandingPage = ({ onStart }) => {
                     background: "var(--teal)",
                   }}
                 />
-                Backed by neuroscience
+                Backed by FireBase, Node.js, Express
               </motion.div>
 
               <motion.h1

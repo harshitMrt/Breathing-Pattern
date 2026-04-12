@@ -423,31 +423,32 @@ const LevelList = ({ onSelect, selectedIndex }) => {
                 </span>
               </div>
 
-              {/* delete */}
+              {/* delete - disabled for predefined levels */}
               <button
-                onClick={(e) => handleDelete(e, item.id)}
+                onClick={(e) => {
+                  if (index >= 4) handleDelete(e, item.id);
+                }}
                 aria-label="Delete level"
+                disabled={index < 4}
                 style={{
                   flexShrink: 0,
                   marginTop: 1,
-                  background: "rgba(226,75,74,0.08)",
-                  border: "0.5px solid rgba(226,75,74,0.18)",
-                  color: "#e24b4a",
+                  background:
+                    index < 4
+                      ? "rgba(120,120,120,0.20)"
+                      : "rgba(226,75,74,0.08)",
+                  border:
+                    index < 4
+                      ? "0.5px solid rgba(120,120,120,0.30)"
+                      : "0.5px solid rgba(226,75,74,0.18)",
+                  color: index < 4 ? "#888" : "#e24b4a",
                   borderRadius: 7,
                   padding: "5px 7px",
-                  cursor: "pointer",
+                  cursor: index < 4 ? "default" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  transition: "background 0.2s, transform 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(226,75,74,0.22)";
-                  e.currentTarget.style.transform = "scale(1.12)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(226,75,74,0.08)";
-                  e.currentTarget.style.transform = "scale(1)";
+                  opacity: index < 4 ? 0.5 : 1,
                 }}
               >
                 <TrashIcon />

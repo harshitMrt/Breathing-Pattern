@@ -1,13 +1,8 @@
 // src/services/aiRecommendation.js
+// Uses Groq API (free) instead of Anthropic
 
-// 🔴 Replace with your actual Anthropic API key
-// Store this in your .env file as REACT_APP_ANTHROPIC_KEY=sk-ant-...
-const ANTHROPIC_KEY =
-  process.env.REACT_APP_ANTHROPIC_KEY || "YOUR_ANTHROPIC_API_KEY";
+const GROQ_KEY = process.env.REACT_APP_GROQ_KEY || "";
 
-/**
- * Need options presented to the user in the UI.
- */
 export const NEED_OPTIONS = [
   { id: "stress", label: "Reduce Stress", emoji: "😮‍💨" },
   { id: "sleep", label: "Better Sleep", emoji: "😴" },
@@ -31,83 +26,82 @@ export const SESSION_DURATIONS = [
   { id: "long", label: "10–20 min", minutes: 15 },
 ];
 
-/**
- * Build the system prompt template.
- */
-const SYSTEM_PROMPT = `You are an expert breathwork coach and therapist. 
+const SYSTEM_PROMPT = `You are an expert breathwork coach and therapist.
 Your job is to design a personalized breathing exercise level for a user based on their needs.
 
-You MUST respond with ONLY a valid JSON object, no markdown, no explanation, nothing else.
+You MUST respond with ONLY a valid JSON object. No markdown, no explanation, no extra text — just raw JSON.
 
 The JSON must follow this exact schema:
 {
-  "name": "string — creative, descriptive name for this level (max 30 chars)",
+  "name": "string — creative name for this level (max 30 chars)",
   "inn": number — inhale duration in seconds (2–8),
   "hold": number — hold after inhale in seconds (0–8),
   "out": number — exhale duration in seconds (2–10),
   "hold2": number — hold after exhale in seconds (0–4),
-  "note": "string — a 1-sentence motivational/instructional tip for the user (max 100 chars)",
-  "technique": "string — name of the breathing technique used (e.g. Box Breathing, 4-7-8, etc.)"
+  "note": "string — a 1-sentence motivational tip for the user (max 100 chars)",
+  "technique": "string — name of the breathing technique (e.g. Box Breathing, 4-7-8)"
 }
 
 Rules:
-- Exhale should typically be longer than inhale for relaxation goals
-- Inhale should be longer than exhale for energy goals
-- For beginners keep all values on the lower end
+- Exhale longer than inhale for relaxation/sleep goals
+- Inhale longer than exhale for energy goals
+- For beginners keep all values low
 - For advanced users use longer holds and ratios
-- hold2 (hold after exhale) is optional — set to 0 if not needed for the goal
+- hold2 is optional — set to 0 if not needed
 - Always name the technique you are using`;
 
-/**
- * Get an AI-generated breathing level recommendation.
- *
- * @param {{ needs: string[], experience: string, duration: string, additionalContext?: string }} params
- * @returns {Promise<{ name, inn, hold, out, hold2, note, technique }>}
- */
 export const getAIRecommendation = async ({
   needs,
   experience,
   duration,
   additionalContext = "",
 }) => {
+  if (!GROQ_KEY) throw new Error("Groq API key not set. Check your .env file.");
+
   const needLabels = needs
     .map((id) => NEED_OPTIONS.find((n) => n.id === id)?.label ?? id)
     .join(", ");
 
   const durationInfo = SESSION_DURATIONS.find((d) => d.id === duration);
 
-  const userMessage = `Please design a breathing level for me with these details:
+  const userMessage = `Please design a breathing level for me:
 
 Goals: ${needLabels}
 Experience level: ${experience}
 Preferred session duration: ${durationInfo?.label ?? duration}
 ${additionalContext ? `Additional context: ${additionalContext}` : ""}
 
-Design the optimal breathing pattern that addresses my goals effectively.`;
+Respond with ONLY the JSON object, nothing else.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-calls": "true",
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GROQ_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        max_tokens: 500,
+        temperature: 0.7,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userMessage },
+        ],
+      }),
     },
-    body: JSON.stringify({
-      model: "claude-opus-4-5",
-      max_tokens: 500,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
-    }),
-  });
+  );
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message ?? `API error ${response.status}`);
+    throw new Error(
+      err?.error?.message ?? `Groq API error (${response.status})`,
+    );
   }
 
   const data = await response.json();
-  const text = data.content?.[0]?.text ?? "";
+  const text = data.choices?.[0]?.message?.content ?? "";
 
   // Strip any accidental markdown fences
   const clean = text.replace(/```json|```/g, "").trim();
@@ -119,7 +113,7 @@ Design the optimal breathing pattern that addresses my goals effectively.`;
     throw new Error("AI returned invalid JSON. Please try again.");
   }
 
-  // Validate & clamp values
+  // Validate & clamp
   return {
     name: String(parsed.name ?? "AI Level").slice(0, 30),
     inn: Math.min(8, Math.max(2, Number(parsed.inn) || 4)),

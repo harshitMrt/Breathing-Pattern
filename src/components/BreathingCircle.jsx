@@ -153,7 +153,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange, onBadgesEa
       changePhase("Welcome! Press Start");
     }
     return clearAll;
-  }, [isRunning, runOneCycle, totalTimer]);
+  }, [isRunning, runOneCycle, totalTimer, changePhase, persistSession]);
 
   if (!level) return <p style={{ color: "var(--text2)" }}>Select a level</p>;
 

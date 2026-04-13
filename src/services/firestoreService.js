@@ -3,7 +3,7 @@ import {
   collection, addDoc, getDocs, deleteDoc,
   doc, setDoc, getDoc, updateDoc,
   query, where, orderBy, serverTimestamp,
-  limit, startAfter, getDocs as getDocsAlias,
+  limit
 } from "firebase/firestore";
 import { db } from "../firebase";
 

@@ -18,7 +18,7 @@ const PhaseTag = ({ label, secs, color, bg, active }) => (
 );
 
 const ExercisePage = ({ onBadgesEarned }) => {
-  const { levels, deleteLevel, loadingLevels, lastAddedIndex } = useAppContext();
+  const { levels, loadingLevels, lastAddedIndex } = useAppContext();
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isRunning,     setIsRunning]     = useState(false);
@@ -45,15 +45,7 @@ const ExercisePage = ({ onBadgesEarned }) => {
     setCurrentPhase("Welcome! Press Start");
   };
 
-  const handleDelete = async (id) => {
-    const idx = levels.findIndex(l => l.id === id);
-    await deleteLevel(id);
-    if (idx === selectedIndex) {
-      setSelectedIndex(Math.max(0, selectedIndex - 1));
-      setCurrentPhase("Welcome! Press Start");
-    }
-    setIsRunning(false);
-  };
+  
 
   return (
     <div style={S.page}>

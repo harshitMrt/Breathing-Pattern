@@ -1,34 +1,31 @@
 // src/context/AuthContext.js
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
-  onAuthStateChanged,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  updateProfile,
+  onAuthStateChanged, signInWithPopup,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, updateProfile,
 } from "firebase/auth";
 import { auth, googleProvider, githubProvider } from "../firebase";
-import {
-  upsertUserProfile,
-  getUserProfile,
-} from "../services/firestoreService";
+import { upsertUserProfile, getUserProfile } from "../services/firestoreService";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [_userProfile, setUserProfile] = useState(null); // Firestore profile
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [user,        setUser]        = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState("");
 
-  // Called after any successful login to sync/create the Firestore profile
+  // Sync / create the Firestore user doc on every login
   const syncProfile = async (firebaseUser) => {
     if (!firebaseUser) return;
     await upsertUserProfile(firebaseUser.uid, {
-      displayName: firebaseUser.displayName || "",
-      email: firebaseUser.email || "",
-      photoURL: firebaseUser.photoURL || "",
+      displayName:      firebaseUser.displayName  || "",
+      // lowercase version enables prefix search in Firestore
+      displayNameLower: (firebaseUser.displayName || firebaseUser.email || "").toLowerCase(),
+      email:            firebaseUser.email        || "",
+      photoURL:         firebaseUser.photoURL     || "",
+      isPublic:         true, // default public — user can toggle in Profile page
     });
     const profile = await getUserProfile(firebaseUser.uid);
     setUserProfile(profile);
@@ -37,7 +34,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) await syncProfile(u);
+      if (u) await syncProfile(u).catch(console.error);
       else setUserProfile(null);
       setLoading(false);
     });
@@ -49,30 +46,24 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     setError("");
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await syncProfile(result.user);
-    } catch (e) {
-      setError(e.message);
-    }
+      const r = await signInWithPopup(auth, googleProvider);
+      await syncProfile(r.user);
+    } catch (e) { setError(e.message); }
   };
 
   const loginWithGithub = async () => {
     setError("");
     try {
-      const result = await signInWithPopup(auth, githubProvider);
-      await syncProfile(result.user);
-    } catch (e) {
-      setError(e.message);
-    }
+      const r = await signInWithPopup(auth, githubProvider);
+      await syncProfile(r.user);
+    } catch (e) { setError(e.message); }
   };
 
   const loginWithEmail = async (email, password) => {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (e) {
-      setError(e.message);
-    }
+    } catch (e) { setError(e.message); }
   };
 
   const signupWithEmail = async (email, password, displayName) => {
@@ -81,14 +72,18 @@ export const AuthProvider = ({ children }) => {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName });
       await syncProfile({ ...cred.user, displayName });
-    } catch (e) {
-      setError(e.message);
-    }
+    } catch (e) { setError(e.message); }
   };
 
-  const updateUserProfile = async (data) => {
+  const updateUserProfileData = async (data) => {
     if (!user) return;
-    await upsertUserProfile(user.uid, data);
+    await upsertUserProfile(user.uid, {
+      ...data,
+      // keep lowercase search field in sync
+      ...(data.displayName !== undefined
+        ? { displayNameLower: data.displayName.toLowerCase() }
+        : {}),
+    });
     const updated = await getUserProfile(user.uid);
     setUserProfile(updated);
   };
@@ -96,21 +91,11 @@ export const AuthProvider = ({ children }) => {
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        _userProfile,
-        loading,
-        error,
-        clearError,
-        loginWithGoogle,
-        loginWithGithub,
-        loginWithEmail,
-        signupWithEmail,
-        updateUserProfile,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{
+      user, userProfile, loading, error, clearError,
+      loginWithGoogle, loginWithGithub, loginWithEmail,
+      signupWithEmail, updateUserProfileData, logout,
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );

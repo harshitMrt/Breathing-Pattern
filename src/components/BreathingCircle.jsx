@@ -389,7 +389,7 @@ const BreathingCircle = ({ index, isRunning, onToggle, onPhaseChange, onBadgesEa
   if (!level) return <p style={{ color: "var(--text2)" }}>Select a level</p>;
 
   const meta   = PHASE_META[phase] ?? PHASE_META["Welcome! Press Start"];
-  const offset = CIRCUMFERENCE - (progress / 100) * CIRCUMFERENCE;
+  
   const scale  = 1 + (progress / 100) * 0.08;
 
   return (

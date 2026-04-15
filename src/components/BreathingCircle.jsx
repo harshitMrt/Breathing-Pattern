@@ -31,7 +31,7 @@ const PHASE_HUES = {
   "Hold again":           { h1: 38,  h2: 22  },
 };
 
-const CIRCUMFERENCE = 2 * Math.PI * 68;
+
 
 // Particle + wisp pools — created once at module level
 const PARTICLES = Array.from({ length: 60 }, () => ({

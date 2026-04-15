@@ -1,12 +1,18 @@
 // src/context/AuthContext.js
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
-  onAuthStateChanged, signInWithPopup,
-  signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signOut, updateProfile,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  updateProfile,
 } from "firebase/auth";
 import { auth, googleProvider, githubProvider } from "../firebase";
-import { upsertUserProfile, getUserProfile } from "../services/firestoreService";
+import {
+  upsertUserProfile,
+  getUserProfile,
+} from "../services/firestoreService";
 
 const AuthContext = createContext(null);
 
@@ -16,26 +22,35 @@ export const AuthProvider = ({ children }) => {
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState("");
 
-  // Sync / create the Firestore user doc on every login
+  // Called after every successful login — creates/updates the Firestore user doc
   const syncProfile = async (firebaseUser) => {
     if (!firebaseUser) return;
-    await upsertUserProfile(firebaseUser.uid, {
-      displayName:      firebaseUser.displayName  || "",
-      // lowercase version enables prefix search in Firestore
-      displayNameLower: (firebaseUser.displayName || firebaseUser.email || "").toLowerCase(),
-      email:            firebaseUser.email        || "",
-      photoURL:         firebaseUser.photoURL     || "",
-      isPublic:         true, // default public — user can toggle in Profile page
-    });
-    const profile = await getUserProfile(firebaseUser.uid);
-    setUserProfile(profile);
+    try {
+      await upsertUserProfile(firebaseUser.uid, {
+        uid:              firebaseUser.uid,
+        displayName:      firebaseUser.displayName  || "",
+        // lowercase field powers the prefix search in Firestore
+        displayNameLower: (firebaseUser.displayName || firebaseUser.email || "").toLowerCase(),
+        email:            firebaseUser.email        || "",
+        photoURL:         firebaseUser.photoURL     || "",
+        // default public — users can toggle off in Profile page
+        isPublic:         true,
+      });
+      const profile = await getUserProfile(firebaseUser.uid);
+      setUserProfile(profile);
+    } catch (e) {
+      console.error("Failed to sync user profile:", e);
+    }
   };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) await syncProfile(u).catch(console.error);
-      else setUserProfile(null);
+      if (u) {
+        await syncProfile(u);
+      } else {
+        setUserProfile(null);
+      }
       setLoading(false);
     });
     return unsub;
@@ -46,24 +61,31 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     setError("");
     try {
-      const r = await signInWithPopup(auth, googleProvider);
-      await syncProfile(r.user);
-    } catch (e) { setError(e.message); }
+      const result = await signInWithPopup(auth, googleProvider);
+      await syncProfile(result.user);
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   const loginWithGithub = async () => {
     setError("");
     try {
-      const r = await signInWithPopup(auth, githubProvider);
-      await syncProfile(r.user);
-    } catch (e) { setError(e.message); }
+      const result = await signInWithPopup(auth, githubProvider);
+      await syncProfile(result.user);
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   const loginWithEmail = async (email, password) => {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (e) { setError(e.message); }
+      // onAuthStateChanged fires automatically and calls syncProfile
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   const signupWithEmail = async (email, password, displayName) => {
@@ -71,15 +93,19 @@ export const AuthProvider = ({ children }) => {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName });
+      // Manually sync because displayName wasn't set when onAuthStateChanged fired
       await syncProfile({ ...cred.user, displayName });
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
+  // Call this from ProfilePage when user edits their profile
   const updateUserProfileData = async (data) => {
     if (!user) return;
     await upsertUserProfile(user.uid, {
       ...data,
-      // keep lowercase search field in sync
+      // keep search field in sync whenever displayName changes
       ...(data.displayName !== undefined
         ? { displayNameLower: data.displayName.toLowerCase() }
         : {}),
@@ -91,11 +117,21 @@ export const AuthProvider = ({ children }) => {
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{
-      user, userProfile, loading, error, clearError,
-      loginWithGoogle, loginWithGithub, loginWithEmail,
-      signupWithEmail, updateUserProfileData, logout,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        userProfile,
+        loading,
+        error,
+        clearError,
+        loginWithGoogle,
+        loginWithGithub,
+        loginWithEmail,
+        signupWithEmail,
+        updateUserProfileData,
+        logout,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );

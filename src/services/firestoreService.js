@@ -2,24 +2,23 @@
 import {
   collection, addDoc, getDocs, deleteDoc,
   doc, setDoc, getDoc, updateDoc,
-  query, where, orderBy, serverTimestamp,
-  limit
+  query, where, orderBy, serverTimestamp, limit,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
 /* ═══════════════════════════════════════
-   USER PROFILE  (public + private data)
+   USER PROFILE
 ═══════════════════════════════════════ */
 
 /**
- * Create or update a user's profile.
- * Called automatically on every login.
+ * Create or merge a user profile document.
+ * Uses { merge: true } so existing fields (bio, goal, etc.) are NOT overwritten.
  */
 export const upsertUserProfile = async (uid, data) => {
   await setDoc(
     doc(db, "users", uid),
     { ...data, uid, updatedAt: serverTimestamp() },
-    { merge: true }
+    { merge: true }   // ← safe: won't wipe bio/goal on re-login
   );
 };
 
@@ -28,9 +27,6 @@ export const getUserProfile = async (uid) => {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };
 
-/**
- * Update specific profile fields (bio, location, goal, etc.)
- */
 export const updateUserProfile = async (uid, data) => {
   await updateDoc(doc(db, "users", uid), {
     ...data,
@@ -38,15 +34,16 @@ export const updateUserProfile = async (uid, data) => {
   });
 };
 
+/* ─── Search users by display name prefix ─── */
 /**
- * Search users by displayName prefix (case-insensitive via lowercase field).
- * Stores displayNameLower automatically on upsert.
+ * Prefix search on the `displayNameLower` field.
+ * Requires a Firestore index on `displayNameLower` (single-field, ascending).
+ * Firestore creates this automatically on first run and shows a console link.
  */
 export const searchUsersByName = async (searchTerm) => {
   if (!searchTerm || searchTerm.trim().length < 2) return [];
-  const term  = searchTerm.toLowerCase().trim();
-  const termEnd = term + "\uf8ff"; // Firestore range trick for prefix search
-
+  const term    = searchTerm.toLowerCase().trim();
+  const termEnd = term + "\uf8ff";
   const q = query(
     collection(db, "users"),
     where("displayNameLower", ">=", term),
@@ -57,16 +54,36 @@ export const searchUsersByName = async (searchTerm) => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
+/* ─── Public users for leaderboard / discover ─── */
 /**
- * Get all public users (for discover / leaderboard).
+ * Returns all users who have isPublic === true, sorted by totalSessions.
+ * Requires composite index: isPublic ASC + totalSessions DESC
  */
-export const getPublicUsers = async (limitCount = 20) => {
-  const q = query(
-    collection(db, "users"),
-    where("isPublic", "==", true),
-    orderBy("totalSessions", "desc"),
-    limit(limitCount)
-  );
+export const getPublicUsers = async (limitCount = 30) => {
+  try {
+    const q = query(
+      collection(db, "users"),
+      where("isPublic", "==", true),
+      orderBy("totalSessions", "desc"),
+      limit(limitCount)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    // Index may not exist yet — fall back to a simple fetch without ordering
+    console.warn("getPublicUsers index missing, falling back:", e.message);
+    const q2   = query(collection(db, "users"), where("isPublic", "==", true), limit(limitCount));
+    const snap = await getDocs(q2);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+};
+
+/**
+ * Fetch ALL registered users (used when isPublic filter doesn't work yet).
+ * Only used as emergency fallback in SearchPage.
+ */
+export const getAllUsers = async (limitCount = 50) => {
+  const q    = query(collection(db, "users"), limit(limitCount));
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
@@ -75,10 +92,6 @@ export const getPublicUsers = async (limitCount = 20) => {
    BADGES
 ═══════════════════════════════════════ */
 
-/**
- * Save the full badges array for a user.
- * badges = [{ id, name, icon, unlockedAt }]
- */
 export const saveUserBadges = async (uid, badges) => {
   await updateDoc(doc(db, "users", uid), {
     badges,
@@ -86,18 +99,11 @@ export const saveUserBadges = async (uid, badges) => {
   });
 };
 
-/**
- * Get badges for any user (public read).
- */
 export const getUserBadges = async (uid) => {
   const snap = await getDoc(doc(db, "users", uid));
   return snap.exists() ? (snap.data().badges ?? []) : [];
 };
 
-/**
- * Update aggregate stats on the user doc so leaderboard/search works.
- * Called after every session.
- */
 export const updateUserStats = async (uid, { totalSessions, totalMinutes, currentStreak, longestStreak }) => {
   await updateDoc(doc(db, "users", uid), {
     totalSessions,

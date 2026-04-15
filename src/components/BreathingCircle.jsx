@@ -5,7 +5,7 @@ import { useAppContext } from "../context/context";
 import { useAuth }       from "../context/AuthContext";
 import { saveSession }   from "../services/firestoreService";
 import { processSession } from "../services/gamification";
-
+// comment
 import exhaleAudio from "../audio.mp3/Exhale.mp3";
 import inhaleAudio from "../audio.mp3/start Breathing.mp3";
 import holdAudio   from "../audio.mp3/Hold Breath.mp3";
@@ -30,7 +30,6 @@ const PHASE_HUES = {
   "Exhale":               { h1: 168, h2: 150 },
   "Hold again":           { h1: 38,  h2: 22  },
 };
-
 
 
 // Particle + wisp pools — created once at module level

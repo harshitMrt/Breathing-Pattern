@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
-import { getUserSessions, getUserCustomLevels, upsertUserProfile } from "../services/firestoreService";
+import { getUserSessions, getUserCustomLevels } from "../services/firestoreService";
 import AvatarUpload from "../components/AvatarUpload";
 
 const Field = ({ label, value, editing, onChange, type = "text", placeholder }) => (
